@@ -10,6 +10,7 @@ import { LogOut } from 'lucide-react';
 
 
 const API_BASE = process.env.REACT_APP_API_BASE;
+;
 
 const decodeJwtPayload = (token) => {
   if (!token) return null;
@@ -201,6 +202,7 @@ const AdminDashboard = () => {
       setLoadingAssignTask(false);
     }
   };
+  
 
   const handleLogout = () => {
     localStorage.clear();
@@ -224,6 +226,9 @@ const usersWithTasks = users.map(user => ({
   ...user,
   tasks: tasks.filter(task => task.assignedTo === user.userId)
 }));
+
+
+
 
   return (
     <div className="flex flex-col min-h-screen ">
@@ -331,7 +336,7 @@ const usersWithTasks = users.map(user => ({
       <td className="px-6 py-4 whitespace-nowrap">{user.userId}</td>
       <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
       <td className="px-6 py-4 whitespace-nowrap">{user.contact}</td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-normal break-words">
         {user.tasks.length > 0 
           ? user.tasks.map(task => task.title).join(", ") 
           : "No tasks assigned"}
@@ -494,7 +499,7 @@ const usersWithTasks = users.map(user => ({
                 </button>
               </section>
 
-     <section className="max-w-5xl p-6">
+     <section className="max-w-9xl p-6">
   <h2 className="text-2xl font-semibold mb-4">All Tasks</h2>
   {loadingTasks && <p>Loading tasks...</p>}
   {!loadingTasks && taskError && <p className="text-red-600">{taskError}</p>}
@@ -502,7 +507,7 @@ const usersWithTasks = users.map(user => ({
   {!loadingTasks && tasks.length > 0 && (
    <div className="overflow-x-auto max-w-full">
   <table
-    className="min-w-full divide-y divide-gray-200"
+    className="tasks-table min-w-full divide-y divide-gray-200"
     style={{ tableLayout: 'fixed' }}
   >
     <thead className="bg-gray-50">
@@ -512,12 +517,14 @@ const usersWithTasks = users.map(user => ({
         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '150px' }}>Deadline</th>
         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Status</th>
-        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px' }}>Assigned To</th>
+        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px' }}>Assigned To</th> */}
       </tr>
     </thead>
     <tbody className="bg-white divide-y divide-gray-200">
       {tasks.map((task) => (
         <tr key={task.taskId || task.id}>
+
+   
           <td className="px-6 py-4 whitespace-nowrap">{task.taskId || task.id}</td>
           <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
           <td className="px-6 py-4 break-words">{task.description}</td>
@@ -526,7 +533,8 @@ const usersWithTasks = users.map(user => ({
     timeStyle: 'short',
   })}</td>
           <td className="px-6 py-4 whitespace-nowrap">{task.status || 'N/A'}</td>
-          <td className="px-6 py-4 whitespace-nowrap truncate" title={task.assignedTo}>{task.assignedTo || 'Unassigned'}</td>
+        {/* <td className="px-6 py-4 whitespace-normal break-words" >{task.assignedTo || 'N/A'}</td> */}
+
         </tr>
       ))}
     </tbody>
