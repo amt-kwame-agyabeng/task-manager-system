@@ -1,0 +1,23 @@
+{
+  "name": "taskmanagementsystem",
+  "version": "1.0.0",
+  "description": "## Overview This project implements a Task Management System for a field team using AWS serverless services. It allows an admin to create and assign tasks to team members. Team members can log in to view and update their assigned tasks. The system handles task notifications, status updates, and deadline tracking efficiently.",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^22.15.19",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.3"
+  },
+  "devDependencies": {
+    "@ljharb/eslint-config": "^21.1.1",
+    "@ljharb/tsconfig": "^0.3.2"
+  }
+}

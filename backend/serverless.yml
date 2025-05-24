@@ -1,0 +1,193 @@
+service: task-management-system
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    USERS_TABLE: UsersTable
+    TASKS_TABLE: TasksTable
+    DEFAULT_ADMIN_ID: admin01
+    DEFAULT_ADMIN_EMAIL: johndoe63@gmail.com
+    DEFAULT_ADMIN_PASSWORD: Jdoe!63
+    JWT_SECRET: e9a1f53a2d6c9b4f8d27e33e1b8c7a9b44b3d2eafcae73982c1230a9d8c5b6f7d1a9e7f8c3d2b4e6f8a7b5c9d0e1f2a3
+    APP_URL: http://localhost:3000
+    GMAIL_USER: kwameagyabeng63@gmail.com
+    GMAIL_APP_PASS: vpjigbvkqoxfwscs
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:GetItem
+            - dynamodb:Scan
+            - dynamodb:Query
+      
+          Resource:
+            - arn:aws:dynamodb:us-east-1:637423528516:table/UsersTable
+            - arn:aws:dynamodb:us-east-1:637423528516:table/UsersTable/index/ContactIndex
+            - arn:aws:dynamodb:us-east-1:637423528516:table/TasksTable
+            - arn:aws:dynamodb:us-east-1:637423528516:table/TasksTable/index/AssignedToIndex
+functions:
+  getAllUsers:
+    handler: handler.getAllUsers
+    events:
+      - http:
+          path: users
+          method: get
+          cors: true
+  setPassword:
+    handler: handler.setPassword
+    events:
+      - http:
+          path: set-password
+          method: post
+          cors: true
+  login:
+    handler: handler.login
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
+  createUser:
+    handler: handler.createUser
+    events:
+      - http:
+          path: users/create
+          method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  createTask:
+    handler: handler.createTask
+    events:
+      - http:
+          path: tasks/create
+          method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  assignTask:
+    handler: handler.assignTask
+    events:
+      - http:
+          path: tasks/assign
+          method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  getAllTasks:
+    handler: handler.getAllTasks
+    events:
+      - http:
+          path: tasks
+          method: get
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  getMyTasks:
+    handler: handler.getMyTasks
+    events:
+      - http:
+          path: tasks/mytasks
+          method: get
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  updateTaskStatus:
+    handler: handler.updateTaskStatus
+    events:
+      - http:
+          path: tasks/update-status
+          method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: UsersTable
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: contact
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ContactIndex
+            KeySchema:
+              - AttributeName: contact
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+    TasksTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: TasksTable
+        AttributeDefinitions:
+          - AttributeName: taskId
+            AttributeType: S
+          - AttributeName: assignedTo
+            AttributeType: S
+        KeySchema:
+          - AttributeName: taskId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: AssignedToIndex
+            KeySchema:
+              - AttributeName: assignedTo
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
