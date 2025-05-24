@@ -131,7 +131,7 @@ module.exports.login = async (event) => {
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: '22h', // token expiry
+      expiresIn: '23h', // token expiry
     });
 
     return {
@@ -567,7 +567,7 @@ module.exports.getMyTasks = async (event) => {
 };
 
 
-// Update task status  (assigned user)
+
 // Update task status (assigned user)
 module.exports.updateTaskStatus = async (event) => {
   const data = JSON.parse(event.body);
@@ -618,6 +618,7 @@ module.exports.updateTaskStatus = async (event) => {
         body: JSON.stringify({ error: 'You are not assigned to this task' }),
       };
     }
+
 
     // Update the task status
     const updateParams = {
@@ -747,6 +748,7 @@ module.exports.setPassword = async (event) => {
     };
   }
 };
+
 
 // Get all users (only admin)
 module.exports.getAllUsers = async (event) => {
