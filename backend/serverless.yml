@@ -7,13 +7,13 @@ provider:
   environment:
     USERS_TABLE: UsersTable
     TASKS_TABLE: TasksTable
-    DEFAULT_ADMIN_ID: admin01
-    DEFAULT_ADMIN_EMAIL: johndoe63@gmail.com
-    DEFAULT_ADMIN_PASSWORD: Jdoe!63
-    JWT_SECRET: e9a1f53a2d6c9b4f8d27e33e1b8c7a9b44b3d2eafcae73982c1230a9d8c5b6f7d1a9e7f8c3d2b4e6f8a7b5c9d0e1f2a3
-    APP_URL: http://localhost:3000
-    GMAIL_USER: kwameagyabeng63@gmail.com
-    GMAIL_APP_PASS: vpjigbvkqoxfwscs
+    DEFAULT_ADMIN_ID: ${env:DEFAULT_ADMIN_ID}
+    DEFAULT_ADMIN_EMAIL: ${env:DEFAULT_ADMIN_EMAIL}
+    DEFAULT_ADMIN_PASSWORD: ${env:DEFAULT_ADMIN_PASSWORD}
+    JWT_SECRET: ${env:JWT_SECRET}
+    APP_URL: ${env:APP_URL}
+    GMAIL_USER: ${env:GMAIL_USER}
+    GMAIL_APP_PASS: ${env:GMAIL_APP_PASS}
 
   iam:
     role:
