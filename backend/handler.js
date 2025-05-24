@@ -131,7 +131,7 @@ module.exports.login = async (event) => {
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: '10h', // token expiry
+      expiresIn: '22h', // token expiry
     });
 
     return {
