@@ -853,6 +853,150 @@ module.exports.setPassword = async (event) => {
 };
 
 
+// Delete task (only admin)
+module.exports.deleteTask = async (event) => {
+  console.log('Delete task event:', JSON.stringify(event));
+  
+  if (!checkRole(event, ['admin'])) {
+    return {
+      statusCode: 403,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Forbidden: only admins can delete tasks' }),
+    };
+  }
+
+  const taskId = event.pathParameters?.taskId;
+  if (!taskId) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing task ID' }),
+    };
+  }
+
+  try {
+    console.log(`Attempting to delete task with ID: ${taskId}`);
+    
+    // Check if task exists
+    const getResult = await dynamoDb.get({
+      TableName: TASKS_TABLE,
+      Key: { taskId },
+    }).promise();
+
+    console.log('Task lookup result:', JSON.stringify(getResult));
+
+    if (!getResult.Item) {
+      console.log(`Task with ID ${taskId} not found`);
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Task not found' }),
+      };
+    }
+
+    // Delete the task
+    await dynamoDb.delete({
+      TableName: TASKS_TABLE,
+      Key: { taskId },
+    }).promise();
+
+    console.log(`Task ${taskId} deleted successfully`);
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'Task deleted successfully' }),
+    };
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Could not delete task', details: error.message }),
+    };
+  }
+};
+
+// Update task deadline (only admin)
+module.exports.updateTaskDeadline = async (event) => {
+  if (!checkRole(event, ['admin'])) {
+    return {
+      statusCode: 403,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Forbidden: only admins can update task deadlines' }),
+    };
+  }
+
+  const taskId = event.pathParameters?.taskId;
+  if (!taskId) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing task ID' }),
+    };
+  }
+
+  let data;
+  try {
+    data = JSON.parse(event.body);
+  } catch {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Invalid JSON in request body' }),
+    };
+  }
+
+  const { deadline } = data;
+  if (!deadline) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing deadline field' }),
+    };
+  }
+
+  try {
+    // Check if task exists
+    const getResult = await dynamoDb.get({
+      TableName: TASKS_TABLE,
+      Key: { taskId },
+    }).promise();
+
+    if (!getResult.Item) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Task not found' }),
+      };
+    }
+
+    // Update the task deadline
+    await dynamoDb.update({
+      TableName: TASKS_TABLE,
+      Key: { taskId },
+      UpdateExpression: 'set deadline = :deadline, updatedAt = :updatedAt',
+      ExpressionAttributeValues: {
+        ':deadline': deadline,
+        ':updatedAt': new Date().toISOString(),
+      },
+      ReturnValues: 'UPDATED_NEW',
+    }).promise();
+
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'Task deadline updated successfully' }),
+    };
+  } catch (error) {
+    console.error('Error updating task deadline:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Could not update task deadline', details: error.message }),
+    };
+  }
+};
+
 // Get all users (only admin)
 module.exports.getAllUsers = async (event) => {
   if (!checkRole(event, ['admin'])) {
@@ -876,6 +1020,167 @@ module.exports.getAllUsers = async (event) => {
       statusCode: 500,
       headers: corsHeaders,
       body: JSON.stringify({ error: 'Could not fetch users', details: error.message }),
+    };
+  }
+};
+
+// Delete user (only admin)
+module.exports.deleteUser = async (event) => {
+  console.log('Delete user event:', JSON.stringify(event));
+  
+  if (!checkRole(event, ['admin'])) {
+    return {
+      statusCode: 403,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Forbidden: only admins can delete users' }),
+    };
+  }
+
+  const userId = event.pathParameters?.userId;
+  if (!userId) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing user ID' }),
+    };
+  }
+
+  // Don't allow deleting the admin user
+  if (userId === DEFAULT_ADMIN_ID) {
+    return {
+      statusCode: 403,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Cannot delete the admin user' }),
+    };
+  }
+
+  // Parse query parameters to check for force delete
+  const queryParams = event.queryStringParameters || {};
+  const forceDelete = queryParams.force === 'true';
+  const reassignTo = queryParams.reassignTo;
+
+  try {
+    console.log(`Attempting to delete user with ID: ${userId}`);
+    
+    // Check if user exists
+    const getResult = await dynamoDb.get({
+      TableName: USERS_TABLE,
+      Key: { userId },
+    }).promise();
+
+    console.log('User lookup result:', JSON.stringify(getResult));
+
+    if (!getResult.Item) {
+      console.log(`User with ID ${userId} not found`);
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'User not found' }),
+      };
+    }
+
+    // Check if user has assigned tasks
+    const tasksResult = await dynamoDb.query({
+      TableName: TASKS_TABLE,
+      IndexName: 'AssignedToIndex',
+      KeyConditionExpression: 'assignedTo = :userId',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+      },
+    }).promise();
+
+    const hasTasks = tasksResult.Items && tasksResult.Items.length > 0;
+    
+    if (hasTasks && !forceDelete) {
+      console.log(`User ${userId} has ${tasksResult.Items.length} assigned tasks`);
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Cannot delete user with assigned tasks', 
+          count: tasksResult.Items.length,
+          tasks: tasksResult.Items.map(task => ({ taskId: task.taskId, title: task.title }))
+        }),
+      };
+    }
+
+    // If force delete and there are tasks, handle them
+    if (hasTasks && forceDelete) {
+      console.log(`Force deleting user ${userId} with ${tasksResult.Items.length} tasks`);
+      
+      // If reassignTo is provided, reassign tasks to another user
+      if (reassignTo) {
+        console.log(`Reassigning tasks to user ${reassignTo}`);
+        
+        // Verify the reassignTo user exists
+        const reassignUserResult = await dynamoDb.get({
+          TableName: USERS_TABLE,
+          Key: { userId: reassignTo },
+        }).promise();
+        
+        if (!reassignUserResult.Item) {
+          return {
+            statusCode: 404,
+            headers: corsHeaders,
+            body: JSON.stringify({ error: `Reassign user ${reassignTo} not found` }),
+          };
+        }
+        
+        // Reassign all tasks
+        for (const task of tasksResult.Items) {
+          await dynamoDb.update({
+            TableName: TASKS_TABLE,
+            Key: { taskId: task.taskId },
+            UpdateExpression: 'set assignedTo = :newUserId, updatedAt = :updatedAt',
+            ExpressionAttributeValues: {
+              ':newUserId': reassignTo,
+              ':updatedAt': new Date().toISOString(),
+            },
+          }).promise();
+        }
+        
+        console.log(`Reassigned ${tasksResult.Items.length} tasks to user ${reassignTo}`);
+      } else {
+        // If no reassignTo, remove assignment from tasks
+        console.log('Removing task assignments');
+        
+        for (const task of tasksResult.Items) {
+          await dynamoDb.update({
+            TableName: TASKS_TABLE,
+            Key: { taskId: task.taskId },
+            UpdateExpression: 'REMOVE assignedTo SET updatedAt = :updatedAt',
+            ExpressionAttributeValues: {
+              ':updatedAt': new Date().toISOString(),
+            },
+          }).promise();
+        }
+        
+        console.log(`Removed assignments from ${tasksResult.Items.length} tasks`);
+      }
+    }
+
+    // Delete the user
+    await dynamoDb.delete({
+      TableName: USERS_TABLE,
+      Key: { userId },
+    }).promise();
+
+    console.log(`User ${userId} deleted successfully`);
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ 
+        message: 'User deleted successfully',
+        tasksHandled: hasTasks ? tasksResult.Items.length : 0,
+        tasksReassigned: reassignTo ? true : false
+      }),
+    };
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Could not delete user', details: error.message }),
     };
   }
 };
