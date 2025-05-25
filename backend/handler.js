@@ -566,6 +566,109 @@ module.exports.getMyTasks = async (event) => {
   }
 };
 
+// Get upcoming deadlines for the logged-in user
+module.exports.getUpcomingDeadlines = async (event) => {
+  console.log('Getting upcoming deadlines');
+
+  const decoded = verifyToken(event);
+  if (!decoded) {
+    return {
+      statusCode: 401,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Unauthorized: Invalid or missing token' }),
+    };
+  }
+
+  const userId = decoded.userId;
+  const role = decoded.role;
+  
+  try {
+    let tasks;
+    
+    if (role === 'admin') {
+      // Admins can see all upcoming deadlines
+      const result = await dynamoDb.scan({
+        TableName: TASKS_TABLE,
+        FilterExpression: '#status <> :completed',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':completed': 'Completed',
+        },
+      }).promise();
+      tasks = result.Items;
+    } else {
+      // Users can only see their own upcoming deadlines
+      const result = await dynamoDb.query({
+        TableName: TASKS_TABLE,
+        IndexName: 'AssignedToIndex',
+        KeyConditionExpression: 'assignedTo = :userId',
+        FilterExpression: '#status <> :completed',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':userId': userId,
+          ':completed': 'Completed',
+        },
+      }).promise();
+      tasks = result.Items;
+    }
+    
+    // Sort tasks by deadline (ascending)
+    tasks.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    
+    // Calculate time remaining for each task
+    const now = new Date();
+    const tasksWithTimeRemaining = tasks.map(task => {
+      const deadlineDate = new Date(task.deadline);
+      const timeRemaining = deadlineDate - now;
+      const daysRemaining = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+      const hoursRemaining = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      return {
+        ...task,
+        timeRemaining: {
+          days: daysRemaining,
+          hours: hoursRemaining,
+          total: timeRemaining,
+          isPastDue: timeRemaining < 0
+        }
+      };
+    });
+    
+    // Group tasks by urgency
+    const pastDue = tasksWithTimeRemaining.filter(task => task.timeRemaining.isPastDue);
+    const dueSoon = tasksWithTimeRemaining.filter(task => 
+      !task.timeRemaining.isPastDue && 
+      task.timeRemaining.total <= 24 * 60 * 60 * 1000 // Due within 24 hours
+    );
+    const upcoming = tasksWithTimeRemaining.filter(task => 
+      !task.timeRemaining.isPastDue && 
+      task.timeRemaining.total > 24 * 60 * 60 * 1000
+    );
+    
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        pastDue,
+        dueSoon,
+        upcoming,
+        totalTasks: tasksWithTimeRemaining.length
+      }),
+    };
+  } catch (error) {
+    console.error('Error fetching upcoming deadlines:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Could not fetch upcoming deadlines', details: error.message }),
+    };
+  }
+};
+
 
 
 // Update task status (assigned user)
