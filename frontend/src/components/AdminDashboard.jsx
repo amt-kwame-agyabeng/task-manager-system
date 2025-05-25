@@ -366,7 +366,7 @@ const AdminDashboard = () => {
       {/* Navbar */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-20 flex items-center justify-between px-6">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold text-blue-600">Task Management Test CI/CD</h1>
+          <h1 className="text-xl font-bold text-blue-600">Task Management System</h1>
         </div>
         
         <div className="navbar flex items-center">
