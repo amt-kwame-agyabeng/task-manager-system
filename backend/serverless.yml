@@ -25,6 +25,7 @@ provider:
             - dynamodb:GetItem
             - dynamodb:Scan
             - dynamodb:Query
+            - dynamodb:DeleteItem
       
           Resource:
             - arn:aws:dynamodb:us-east-1:637423528516:table/UsersTable
@@ -32,6 +33,16 @@ provider:
             - arn:aws:dynamodb:us-east-1:637423528516:table/TasksTable
             - arn:aws:dynamodb:us-east-1:637423528516:table/TasksTable/index/AssignedToIndex
 functions:
+  checkDeadlines:
+    handler: deadlineNotifier.checkDeadlines
+    events:
+      - schedule: rate(1 hour)
+    description: 'Checks for upcoming task deadlines and sends notifications to users'
+  resetNotificationFlags:
+    handler: deadlineNotifier.resetNotificationFlags
+    events:
+      - schedule: rate(6 hours)
+    description: 'Resets notification flags for tasks outside the notification window'
   getAllUsers:
     handler: handler.getAllUsers
     events:
@@ -75,6 +86,22 @@ functions:
       - http:
           path: tasks/create
           method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  getUpcomingDeadlines:
+    handler: handler.getUpcomingDeadlines
+    events:
+      - http:
+          path: tasks/upcoming-deadlines
+          method: get
           cors:
             origins:
               - "*"
@@ -139,6 +166,54 @@ functions:
       - http:
           path: tasks/update-status
           method: post
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  deleteTask:
+    handler: handler.deleteTask
+    events:
+      - http:
+          path: tasks/{taskId}
+          method: delete
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  updateTaskDeadline:
+    handler: handler.updateTaskDeadline
+    events:
+      - http:
+          path: tasks/{taskId}
+          method: put
+          cors:
+            origins:
+              - "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-User-Id
+              - X-User-Role
+  deleteUser:
+    handler: handler.deleteUser
+    events:
+      - http:
+          path: users/{userId}
+          method: delete
           cors:
             origins:
               - "*"
