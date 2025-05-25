@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import {  LayoutDashboard } from 'lucide-react';
-import { CircleEllipsis   } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
+import { CircleEllipsis } from 'lucide-react';
 import { ListChecks } from 'lucide-react';
 import { LogOut } from 'lucide-react';
 import { FileCheck } from 'lucide-react';
+import { Clock } from 'lucide-react';
+import { User } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_API_BASE;
 const statusOptions = ['Pending', 'In Progress', 'Completed'];
@@ -30,13 +32,13 @@ const decodeJwtPayload = (token) => {
 const getStatusClass = (status) => {
   switch (status) {
     case 'Pending':
-      return 'text-yellow-700 bg-yellow-100';
+      return 'text-yellow-700 bg-yellow-100 rounded-full px-3 py-1 text-xs';
     case 'In Progress':
-      return 'text-blue-700 bg-blue-100';
+      return 'text-blue-700 bg-blue-100 rounded-full px-3 py-1 text-xs';
     case 'Completed':
-      return 'text-green-700 bg-green-100';
+      return 'text-green-700 bg-green-100 rounded-full px-3 py-1 text-xs';
     default:
-      return 'text-gray-700 bg-gray-100';
+      return 'text-gray-700 bg-gray-100 rounded-full px-3 py-1 text-xs';
   }
 };
 
@@ -45,6 +47,10 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState({});
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tasksPerPage] = useState(10);
 
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('userId');
@@ -64,7 +70,6 @@ const UserDashboard = () => {
     }
   }, [token, userPayload]);
 
-
   const handleLogout = () => {
     localStorage.clear();
     window.location.reload();
@@ -79,7 +84,7 @@ const UserDashboard = () => {
       setTasks(res.data);
     } catch (err) {
       console.error('Failed to fetch tasks', err);
-      alert('Error fetching tasks');
+      toast.error('Error fetching tasks');
     } finally {
       setLoading(false);
     }
@@ -107,179 +112,396 @@ const UserDashboard = () => {
     fetchTasks();
   }, []);
 
-const DashboardView = () => {
-  if (loading) return <div className='mt-8'>Loading tasks...</div>;
-
-  return (
-    <div>
-      <div className="flex flex-row gap-5 mb-6 mt-20">
-        <div className="p-4 bg-white shadow rounded w-1/3 border-l-4 border-blue-400">
-          <div className='flex items-center gap-2 mb-3'>
-              <ListChecks color='green' />
-                <p>Total Task </p>
-              </div>
-          <p className="text-3xl fomt-normal">{tasks.length}</p>
-        </div>
-        <div className="p-4 bg-white shadow rounded w-1/3 border-l-4 border-green-400">
-          
-          <div className='flex items-center gap-2 mb-3'>
-            <FileCheck color='green' />
-        <p className="text-gray-700 font-semibold">Completed Tasks</p>
-          </div>
-          <p className="text-4xl font-normal">{tasks.filter((t) => t.status === 'Completed').length}</p>
-        </div>
-        <div className="p-4 bg-white shadow rounded w-1/3 border-l-4 border-yellow-400">
-         <div className='flex items-center gap-2 mb-3'>
-              <CircleEllipsis color='yellow' />
-                 <p className="text-gray-700 font-semibold">Pending Tasks</p>
-              </div>
-        
-          <p className="text-3xl font-normal">{tasks.filter((t) => t.status === 'Pending').length}</p>
-        </div>
+  const DashboardView = () => {
+    if (loading) return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
+    );
+    
+    // For recent tasks in dashboard, we'll show first 5 tasks without pagination
 
-      {/* Table showing Task ID and Title */}
-      <p className='text-2xl mt-5 mb-4 font-semibold'>Task Assigned</p>
-      {tasks.length === 0 ? (
-        <p>No tasks assigned</p>
-      ) : (
-       <table
-  className="min-w-full divide-y divide-gray-200"
-  style={{ tableLayout: 'fixed' }}
->
-  <thead className="bg-gray-50">
-    <tr>
-      <th
-        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-        style={{ width: '100px' }}
-      >
-        Task ID
-      </th>
-      <th
-        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-        style={{ width: '200px' }}
-      >
-        Title
-      </th>
-    </tr>
-  </thead>
-  <tbody className="bg-white divide-y divide-gray-200">
-    {tasks.map((task) => (
-      <tr key={task.taskId} className="hover:bg-gray-50">
-        <td className="px-6 py-4 whitespace-nowrap">{task.taskId}</td>
-        <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-      )}
-    </div>
-  );
-};
-
-
-  const TasksView = () => {
-    if (loading) return <div>Loading tasks...</div>;
+    const pendingTasks = tasks.filter(t => t.status === 'Pending').length;
+    const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
+    const completedTasks = tasks.filter(t => t.status === 'Completed').length;
 
     return (
       <div>
-        <h2 className="text-2xl font-semibold mb-4 mt-20" >My Tasks</h2>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+          <p className="text-gray-600">Welcome back, {userPayload?.name || 'User'}</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-blue-500 transition-all hover:shadow-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                  <ListChecks size={24} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500 font-medium">Total Tasks</p>
+                  <p className="text-3xl font-bold text-gray-800">{tasks.length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-green-500 transition-all hover:shadow-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-green-100 text-green-600">
+                  <FileCheck size={24} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500 font-medium">Completed</p>
+                  <p className="text-3xl font-bold text-gray-800">{completedTasks}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-yellow-500 transition-all hover:shadow-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                  <CircleEllipsis size={24} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500 font-medium">Pending</p>
+                  <p className="text-3xl font-bold text-gray-800">{pendingTasks}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-800">Task Progress</h2>
+          </div>
+          <div className="p-6">
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div className="flex rounded-full h-4">
+                <div 
+                  className="bg-green-500 rounded-l-full" 
+                  style={{ width: `${tasks.length ? (completedTasks / tasks.length) * 100 : 0}%` }}
+                ></div>
+                <div 
+                  className="bg-blue-500" 
+                  style={{ width: `${tasks.length ? (inProgressTasks / tasks.length) * 100 : 0}%` }}
+                ></div>
+                <div 
+                  className="bg-yellow-500 rounded-r-full" 
+                  style={{ width: `${tasks.length ? (pendingTasks / tasks.length) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="flex justify-between mt-2 text-sm">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                <span>Completed ({completedTasks})</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
+                <span>In Progress ({inProgressTasks})</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
+                <span>Pending ({pendingTasks})</span>
+              </div>
+            </div>
+          </div>
+        </div>
+          
+        <div className="px-6 py-4 border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">Recent Tasks</h2>
+            <button 
+              onClick={() => setActiveTab('tasks')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              View All
+            </button>
+          </div>
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          
+          {tasks.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">No tasks assigned</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tasks.slice(0, 5).map((task) => (
+                    <tr key={task.taskId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.taskId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={getStatusClass(task.status)}>{task.status || 'N/A'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(task.deadline).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const TasksView = () => {
+    if (loading) return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+    
+    // Get current tasks for pagination
+    const indexOfLastTask = currentPage * tasksPerPage;
+    const indexOfFirstTask = indexOfLastTask - tasksPerPage;
+    const currentTasks = tasks.slice(indexOfFirstTask, indexOfLastTask);
+    const totalPages = Math.ceil(tasks.length / tasksPerPage);
+    
+    // Change page
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">My Tasks</h1>
+          <p className="text-gray-600">Manage and update your assigned tasks</p>
+        </div>
+        
         {tasks.length === 0 ? (
-          <p>No tasks assigned</p>
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
+              <ListChecks size={32} />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">No Tasks Assigned</h2>
+            <p className="text-gray-600">You don't have any tasks assigned to you at the moment.</p>
+          </div>
         ) : (
-         <table
-  className="min-w-full divide-y divide-gray-200"
-  style={{ tableLayout: 'fixed' }}
->
-  <thead className="bg-gray-50">
-    <tr>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>Task ID</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '150px' }}>Title</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '150px' }}>Deadline</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>Status</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px' }}>Update</th>
-    </tr>
-  </thead>
-  <tbody className="bg-white divide-y divide-gray-200">
-    {tasks.map((task) => (
-      <tr key={task.taskId} className="hover:bg-gray-50">
-        <td className="px-6 py-4 whitespace-nowrap">{task.taskId}</td>
-        <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
-        <td className="px-6 py-4 break-words">{task.description}</td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          {new Date(task.deadline).toLocaleString('en-US', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })}
-        </td>
-        <td className={`px-6 py-4 whitespace-nowrap font-semibold ${getStatusClass(task.status)}`}>
-          {task.status || 'N/A'}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <select
-  className="border border-gray-300 rounded-md px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-  value={task.status}
-  onChange={(e) => updateStatus(task.taskId, e.target.value)}
-  disabled={updating[task.taskId]}
->
-  {statusOptions.map((status) => (
-    <option key={status} value={status}>
-      {status}
-    </option>
-  ))}
-</select>
-
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Update</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentTasks.map((task) => (
+                    <tr key={task.taskId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{task.taskId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.title}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{task.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Clock size={16} className="mr-1 text-gray-400" />
+                          {new Date(task.deadline).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={getStatusClass(task.status)}>{task.status || 'N/A'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {updating[task.taskId] ? (
+                          <div className="animate-pulse flex items-center">
+                            <div className="h-4 w-4 mr-2 rounded-full bg-blue-400"></div>
+                            <span className="text-sm text-gray-500">Updating...</span>
+                          </div>
+                        ) : (
+                          <select
+                            className="border border-gray-300 rounded-md px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            value={task.status}
+                            onChange={(e) => updateStatus(task.taskId, e.target.value)}
+                            disabled={updating[task.taskId]}
+                          >
+                            {statusOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{indexOfFirstTask + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {indexOfLastTask > tasks.length ? tasks.length : indexOfLastTask}
+                        </span>{' '}
+                        of <span className="font-medium">{tasks.length}</span> tasks
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={() => paginate(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                            currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        {[...Array(totalPages)].map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => paginate(i + 1)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === i + 1
+                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => paginate(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                            currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="sr-only">Next</span>
+                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Navbar - sits behind sidebar */}
-      <nav className="fixed top-0 left-0 w-full 0 p-4 z-0 border border-gray-300  ">
-       <p className='text-right'> Welcome, {userPayload?.name || 'User'}</p>
-      </nav>
-
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-20 flex items-center justify-between px-6">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-blue-600">Task Management</h1>
+        </div>
+        
+        <div className="navbar flex items-center">
+          <div className="flex items-center">
+            <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+              <User size={24} />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-900">{userPayload?.name || 'User'}</p>
+              <p className="text-xs text-gray-500 capitalize">{role}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-full w-48 bg-gray-100 p-4 z-10 shadow flex flex-col items-start">
-        <button
-          className={`w-full text-left mt-8 mb-2 px-4 py-2 rounded ${activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'hover:bg-blue-100'}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-
-          <LayoutDashboard className="inline-block mr-2" />
-          Dashboard
-        </button>
-        <button
-          className={`w-full text-left mb-2 px-4 py-2 rounded ${activeTab === 'tasks' ? 'bg-blue-600 text-white' : 'hover:bg-blue-100'}`}
-          onClick={() => setActiveTab('tasks')}
-        >
-          <ListChecks className="inline-block mr-2" />
-          Tasks
-        </button>
-        <button
-          onClick={handleLogout}
-          className="mt-10 text-left w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-        >
-          <LogOut className="inline-block mr-2" />
-          Logout
-        </button>
+      <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-md z-10">
+        
+        <nav className="mt-6 px-4">
+          <button
+            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+              activeTab === 'dashboard' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+            }`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <LayoutDashboard className="mr-3" size={20} />
+            <span className="font-medium">Dashboard</span>
+          </button>
+          
+          <button
+            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+              activeTab === 'tasks' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+            }`}
+            onClick={() => setActiveTab('tasks')}
+          >
+            <ListChecks className="mr-3" size={20} />
+            <span className="font-medium">Tasks</span>
+          </button>
+          
+          <div className="absolute bottom-4 left-0 right-0 px-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="mr-3" size={20} />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
+        </nav>
       </div>
 
       {/* Main Content */}
-      <main className=" flex-1 p-10 overflow-auto ml-48 bg-white ">
+      <div className="ml-64 pt-20 px-8 pb-8">
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'tasks' && <TasksView />}
-      </main>
+      </div>
     </div>
   );
 };
