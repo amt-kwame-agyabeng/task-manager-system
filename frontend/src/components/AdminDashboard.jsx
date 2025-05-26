@@ -824,7 +824,7 @@ const AdminDashboard = () => {
                         {loadingCreateTask ? (
                           <>
                             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-3"></div>
-                            Processing Submission
+                          Creating Task
                           </>
                         ) : 'Submit New Task'}
                       </button>
@@ -902,7 +902,7 @@ const AdminDashboard = () => {
                         {loadingAssignTask ? (
                           <>
                             <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-3"></div>
-                            Processing Assignment
+                            Assigning Task
                           </>
                         ) : 'Assign Task to User'}
                       </button>
