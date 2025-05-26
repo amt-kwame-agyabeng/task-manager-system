@@ -910,15 +910,15 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-             <div className="px-6 py-4  border-gray-200 bg-gray-50 flex flex-row justify-between ">
-                <h2 className="text-lg font-semibold text-gray-800">All Tasks</h2>
-                <button 
-                  onClick={() => fetchTasks()}
-                  className=" hover:text-blue-800 text-sm font-medium"
-                >
-                  Refresh
-                </button>
-              </div>
+            <div className="px-6 py-4 border-gray-200 bg-gray-50 flex flex-row justify-between">
+  <h2 className="text-lg font-semibold text-gray-800">All Tasks</h2>
+  <button
+    onClick={() => fetchTasks()}
+    className="hover:text-blue-800 text-sm font-medium"
+  >
+    Refresh
+  </button>
+</div>
             </div>
 
             
