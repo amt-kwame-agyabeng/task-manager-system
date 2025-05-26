@@ -11,6 +11,8 @@ import { Pencil } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { X } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { Logs } from 'lucide-react';
 
 
 const API_BASE = process.env.REACT_APP_API_BASE;
@@ -35,15 +37,7 @@ const decodeJwtPayload = (token) => {
 const InputField = ({ label, id, name, value, onChange, placeholder, type = 'text', ...rest }) => (
   <div className="mb-4 flex flex-col w-full">
     {label && (
-      <label htmlFor={id || name} className="mb-1.5 font-medium text-gray-700 flex items-center">
-        <span className="bg-blue-50 p-1 rounded-md text-blue-600 mr-2">
-          {name === 'userId' || name === 'taskId' ? '#' : 
-           name === 'name' ? <User size={14} /> : 
-           name === 'contact' ? '@' : 
-           name === 'title' ? 'Aa' : 
-           name === 'description' ? '¶' : 
-           name === 'deadline' ? <Clock size={14} /> : ''}
-        </span>
+      <label htmlFor={id || name} className="mb-1 font-medium text-gray-700">
         {label}
       </label>
     )}
@@ -54,11 +48,33 @@ const InputField = ({ label, id, name, value, onChange, placeholder, type = 'tex
       onChange={onChange}
       placeholder={placeholder}
       type={type}
-      className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white text-gray-800 transition-all hover:border-blue-300"
+      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
       {...rest}
     />
   </div>
 );
+
+// Modal component
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-md shadow-lg p-6 max-w-md w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, users, tasks
@@ -69,6 +85,11 @@ const AdminDashboard = () => {
   const [currentUserPage, setCurrentUserPage] = useState(1);
   const [tasksPerPage] = useState(10);
   const [usersPerPage] = useState(10);
+
+  // Modal states
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   const [userForm, setUserForm] = useState({ userId: '', name: '', contact: '' });
   const [taskForm, setTaskForm] = useState({
@@ -173,6 +194,7 @@ const AdminDashboard = () => {
       toast.success('User created successfully');
       clearUserForm();
       fetchUsers();
+      setShowUserModal(false);
     } catch (err) {
       toast.error('Failed to create user');
       console.error(err);
@@ -193,6 +215,7 @@ const AdminDashboard = () => {
       toast.success('Task created successfully');
       clearTaskForm();
       fetchTasks();
+      setShowTaskModal(false);
     } catch (err) {
       toast.error('Failed to create task');
       console.error(err);
@@ -213,6 +236,7 @@ const AdminDashboard = () => {
       toast.success('Task assigned successfully');
       clearAssignForm();
       fetchTasks();
+      setShowAssignModal(false);
     } catch (err) {
       toast.error('Failed to assign task,');
       console.error(err);
@@ -331,13 +355,13 @@ const AdminDashboard = () => {
   const getStatusClass = (status) => {
     switch ((status || '').toLowerCase()) {
       case 'completed':
-        return 'text-green-700 bg-green-100 rounded-full px-3 py-1 text-xs';
+        return 'text-green-700 bg-green-100 rounded px-2 py-1 text-xs';
       case 'pending':
-        return 'text-yellow-700 bg-yellow-100 rounded-full px-3 py-1 text-xs';
+        return 'text-yellow-700 bg-yellow-100 rounded px-2 py-1 text-xs';
       case 'in progress':
-        return 'text-blue-700 bg-blue-100 rounded-full px-3 py-1 text-xs';
+        return 'text-blue-700 bg-blue-100 rounded px-2 py-1 text-xs';
       default:
-        return 'text-gray-700 bg-gray-100 rounded-full px-3 py-1 text-xs';
+        return 'text-gray-700 bg-gray-100 rounded px-2 py-1 text-xs';
     }
   };
 
@@ -364,9 +388,9 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-20 flex items-center justify-between px-6">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gray-50 shadow-sm z-20 flex items-center justify-between px-6">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold text-blue-600">Task Management System</h1>
+          <h1 className="text-xl font-bold text-blue-600">Task Management</h1>
         </div>
         
         <div className="navbar flex items-center">
@@ -667,32 +691,29 @@ const AdminDashboard = () => {
                <div className='flex flex-row justify-between items-center px-6 py-5 border-gray-200 bg-gray-50'>
                  <h2 className="text-lg font-semibold text-gray-800">User Registration</h2>
                 <button 
-                  onClick={() => clearUserForm()}
-                  className="px-4 py-2 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 text-sm font-medium transition-colors"
+                  onClick={() => setShowUserModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                 >
-                  Reset Form
+                  Add New User
                 </button>
                </div>
                
-             
               <div className="p-8">
-                {userError && (
-                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-center" role="alert">
-                    <div className="text-red-500 mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
+                {/* User registration modal */}
+                <Modal 
+                  isOpen={showUserModal} 
+                  onClose={() => {
+                    setShowUserModal(false);
+                    clearUserForm();
+                    setUserError('');
+                  }}
+                  title="Register New User"
+                >
+                  {userError && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg shadow-sm" role="alert">
+                      <p className="text-red-700 text-sm">{userError}</p>
                     </div>
-                    <p className="text-red-700 font-medium">{userError}</p>
-                  </div>
-                )}
-                <div className="max-w-md bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-                  <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center">
-                    <Users className="mr-3 text-blue-600" size={22} />
-                    User Registration Form
-                  </h3>
+                  )}
                   <InputField
                     label="User ID"
                     id="userId"
@@ -718,29 +739,37 @@ const AdminDashboard = () => {
                     onChange={handleUserInput}
                     placeholder="Enter email address"
                   />
-                  <div className="mt-8 pt-4 border-t border-gray-100">
+                  <div className="mt-6 flex justify-end space-x-3">
                     <button
-                      onClick={createUser}
+                      onClick={() => {
+                        setShowUserModal(false);
+                        clearUserForm();
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        createUser();
+                        if (!userError) setShowUserModal(false);
+                      }}
                       disabled={
                         loadingCreateUser ||
                         !userForm.userId.trim() ||
                         !userForm.name.trim() ||
                         !userForm.contact.trim()
                       }
-                      className={`flex items-center justify-center w-full text-white bg-blue-600 hover:bg-blue-700 rounded-md px-6 py-3 font-medium transition-all shadow-md ${
-                        loadingCreateUser ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                      className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
+                        loadingCreateUser || !userForm.userId.trim() || !userForm.name.trim() || !userForm.contact.trim()
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : ''
                       }`}
                     >
-                      <Users className="mr-2" size={18} />
-                      {loadingCreateUser ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-3"></div>
-                          Processing Registration
-                        </>
-                      ) : 'Register New User'}
+                      {loadingCreateUser ? 'Processing...' : 'Register User'}
                     </button>
                   </div>
-                </div>
+                </Modal>
               </div>
            
           </section>
@@ -755,26 +784,40 @@ const AdminDashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="">
-                <div className="px-6 py-5 border-gray-200 bg-gray-50 flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-800">Task Creation</h2>
+                <div className=" flex flex-row gap-2">
+                  
                   <button 
-                    onClick={() => clearTaskForm()}
-                    className="px-4 py-2 border border-green-500 text-green-600 rounded-md hover:bg-green-50 text-sm font-medium transition-colors"
+
+                    onClick={() => setShowTaskModal(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center"
                   >
-                    Reset Form
+                    <Plus  className='mr-2'/>
+                    Create Task
+                  </button>
+                   <button 
+                    onClick={() => setShowAssignModal(true)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 text-sm font-medium flex items-center"
+                  >
+                    <Logs className='mr-2' />
+                    Assign Task
                   </button>
                 </div>
                 <div className="p-8">
-                  {taskError && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm" role="alert">
-                      <p className="text-red-700">{taskError}</p>
-                    </div>
-                  )}
-                  <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-                    <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center">
-                      <ListChecks className="mr-3 text-green-600" size={22} />
-                      Task Creation Form
-                    </h3>
+                  {/* Task creation modal */}
+                  <Modal 
+                    isOpen={showTaskModal} 
+                    onClose={() => {
+                      setShowTaskModal(false);
+                      clearTaskForm();
+                      setTaskError('');
+                    }}
+                    title="Create New Task"
+                  >
+                    {taskError && (
+                      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg shadow-sm" role="alert">
+                        <p className="text-red-700 text-sm">{taskError}</p>
+                      </div>
+                    )}
                     <InputField
                       label="Task ID"
                       id="taskId"
@@ -807,118 +850,157 @@ const AdminDashboard = () => {
                       value={taskForm.deadline}
                       onChange={handleTaskInput}
                     />
-                    <div className="mt-8 pt-4 border-t border-gray-100">
+                    <div className="mt-6 flex justify-end space-x-3">
                       <button
-                        onClick={createTask}
+                        onClick={() => {
+                          setShowTaskModal(false);
+                          clearTaskForm();
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          createTask();
+                          if (!taskError) setShowTaskModal(false);
+                        }}
                         disabled={
                           loadingCreateTask ||
                           !taskForm.taskId.trim() ||
                           !taskForm.title.trim() ||
                           !taskForm.description.trim()
                         }
-                        className={`flex items-center justify-center w-full text-white bg-green-600 hover:bg-green-700 rounded-md px-6 py-3 font-medium transition-all shadow-md ${
-                          loadingCreateTask ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                        className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 ${
+                          loadingCreateTask || !taskForm.taskId.trim() || !taskForm.title.trim() || !taskForm.description.trim()
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : ''
                         }`}
                       >
-                        <ListChecks className="mr-2" size={18} />
-                        {loadingCreateTask ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-3"></div>
-                          Creating Task
-                          </>
-                        ) : 'Submit New Task'}
+                        {loadingCreateTask ? 'Create Task' : 'Create Task'}
                       </button>
                     </div>
-                  </div>
+                  </Modal>
                 </div>
               </div>
               
-              <div className="">
-                <div className="px-6 py-5 border-gray-200 bg-gray-50 flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-800">Task Assignment</h2>
-                  <button 
-                    onClick={() => clearAssignForm()}
-                    className="px-4 py-2 border border-purple-500 text-purple-600 rounded-md hover:bg-purple-50 text-sm font-medium transition-colors"
-                  >
-                    Reset Form
-                  </button>
+              <div >
+                <div >
+                  
+                 
                 </div>
                 <div className="p-8">
-                  {assignError && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-center" role="alert">
-                      <div className="text-red-500 mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
+                  {/* Task assignment modal */}
+                  <Modal 
+                    isOpen={showAssignModal} 
+                    onClose={() => {
+                      setShowAssignModal(false);
+                      clearAssignForm();
+                      setAssignError('');
+                    }}
+                    title="Assign Task to User"
+                  >
+                    {assignError && (
+                      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg shadow-sm" role="alert">
+                        <p className="text-red-700 text-sm">{assignError}</p>
                       </div>
-                      <p className="text-red-700 font-medium">{assignError}</p>
+                    )}
+                    <div className="mb-4">
+                      <label htmlFor="assignTaskId" className="mb-1 font-medium text-gray-700">
+                        Select Task
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="assignTaskId"
+                          name="taskId"
+                          value={assignForm.taskId}
+                          onChange={handleAssignInput}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                        >
+                          <option value="" disabled>Choose a task to assign</option>
+                          {tasks.map(task => (
+                            <option 
+                              key={task.taskId || task.id} 
+                              value={task.taskId || task.id}
+                            >
+                              {task.title} ({task.taskId || task.id}) {task.assignedTo ? '- Currently assigned' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">Select the task you want to assign (tasks can be reassigned)</p>
                     </div>
-                  )}
-                  <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-                    <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 text-purple-600">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                      </svg>
-                      Task Assignment Form
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <InputField
-                        label="Task ID"
-                        id="assignTaskId"
-                        name="taskId"
-                        value={assignForm.taskId}
-                        onChange={handleAssignInput}
-                        placeholder="Enter task ID to assign"
-                      />
-                      <InputField
-                        label="User ID"
-                        id="assignUserId"
-                        name="userId"
-                        value={assignForm.userId}
-                        onChange={handleAssignInput}
-                        placeholder="Enter user ID to assign task to"
-                      />
+                    <div className="mb-4 flex flex-col w-full">
+                      <label htmlFor="assignUserId" className="mb-1 font-medium text-gray-700">
+                        Select User
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="assignUserId"
+                          name="userId"
+                          value={assignForm.userId}
+                          onChange={handleAssignInput}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                        >
+                          <option value="" disabled>Choose a user to assign</option>
+                          {users
+                            .filter(user => user.role === 'user')
+                            .map(user => (
+                              <option key={user.userId} value={user.userId}>
+                                {user.name} ({user.userId})
+                              </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">Select the user who will be responsible for this task</p>
                     </div>
-                    <div className="mt-8 pt-4 border-t border-gray-100">
+                    <div className="mt-6 flex justify-end space-x-3">
                       <button
-                        onClick={assignTask}
+                        onClick={() => {
+                          setShowAssignModal(false);
+                          clearAssignForm();
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          assignTask();
+                          if (!assignError) setShowAssignModal(false);
+                        }}
                         disabled={
                           loadingAssignTask ||
                           !assignForm.taskId.trim() ||
                           !assignForm.userId.trim()
                         }
-                        className={`flex items-center justify-center w-full text-white bg-purple-600 hover:bg-purple-700 rounded-md px-6 py-3 font-medium transition-all shadow-md ${
-                          loadingAssignTask ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                        className={`px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 ${
+                          loadingAssignTask || !assignForm.taskId.trim() || !assignForm.userId.trim()
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : ''
                         }`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                          <path d="M20 6L9 17l-5-5"></path>
-                        </svg>
-                        {loadingAssignTask ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-3"></div>
-                            Assigning Task
-                          </>
-                        ) : 'Assign Task to User'}
+                        {loadingAssignTask ? 'Assigning...' : 'Assign Task'}
                       </button>
                     </div>
-                  </div>
+                  </Modal>
                 </div>
               </div>
-            <div className="px-6 py-4 border-gray-200 bg-gray-50 flex flex-row justify-between">
+            <div className="px-6 py-4 border-gray-200 bg-gray-50 flex flex-row justify-between ">
     <h2 className="text-lg font-semibold text-gray-800">All Tasks</h2>
-  <button
-    onClick={() => fetchTasks()}
-    className="hover:text-blue-800 text-sm font-medium"
-  >
-    Refresh Table
-  </button>
+  
 </div>
+
             </div>
 
             
@@ -1147,7 +1229,7 @@ const AdminDashboard = () => {
                 onChange={(e) => setReassignUserId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">-- Leave tasks unassigned --</option>
+                <option value=""> Leave tasks unassigned </option>
                 {users
                   .filter(u => u.userId !== userToDelete?.userId && u.role !== 'admin')
                   .map(user => (
