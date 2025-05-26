@@ -132,7 +132,7 @@ const UserDashboard = () => {
           <p className="text-gray-600">Welcome back, {userPayload?.name || 'User'}</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-blue-500 transition-all hover:shadow-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -174,6 +174,20 @@ const UserDashboard = () => {
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-blue-500 transition-all hover:shadow-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                  <Clock size={24} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500 font-medium">In Progress</p>
+                  <p className="text-3xl font-bold text-gray-800">{inProgressTasks}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        
         </div>
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
