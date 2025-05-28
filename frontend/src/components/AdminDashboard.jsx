@@ -368,13 +368,15 @@ const AdminDashboard = () => {
     if (!editTaskForm.taskId) return;
     
     try {
+      // Create an object with only the fields that have values
+      const updateData = {};
+      if (editTaskForm.title) updateData.title = editTaskForm.title;
+      if (editTaskForm.description !== undefined) updateData.description = editTaskForm.description;
+      if (editTaskForm.deadline) updateData.deadline = editTaskForm.deadline;
+      
       await axios.put(
         `${API_BASE}/tasks/${editTaskForm.taskId}`, 
-        { 
-          title: editTaskForm.title,
-          description: editTaskForm.description,
-          deadline: editTaskForm.deadline 
-        }, 
+        updateData, 
         { headers }
       );
       
@@ -384,9 +386,7 @@ const AdminDashboard = () => {
           (task.taskId || task.id) === editTaskForm.taskId 
             ? { 
                 ...task, 
-                title: editTaskForm.title,
-                description: editTaskForm.description,
-                deadline: editTaskForm.deadline
+                ...updateData
               } 
             : task
         )
