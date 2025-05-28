@@ -192,8 +192,8 @@ functions:
               - X-Api-Key
               - X-User-Id
               - X-User-Role
-  updateTaskDeadline:
-    handler: handler.updateTaskDeadline
+  updateTaskDetails:
+    handler: handler.updateTaskDetails
     events:
       - http:
           path: tasks/{taskId}
