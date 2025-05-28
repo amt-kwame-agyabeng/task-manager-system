@@ -9,10 +9,10 @@ import { User } from 'lucide-react';
 import { Clock } from 'lucide-react';
 import { Pencil } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
-import { Check } from 'lucide-react';
 import { X } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { Logs } from 'lucide-react';
+import { UserRoundPlus } from 'lucide-react';
 
 
 const API_BASE = process.env.REACT_APP_API_BASE;
@@ -110,8 +110,13 @@ const AdminDashboard = () => {
   const [loadingCreateTask, setLoadingCreateTask] = useState(false);
   const [loadingAssignTask, setLoadingAssignTask] = useState(false);
   const [loadingDeleteTask, setLoadingDeleteTask] = useState({});
-  const [editingTask, setEditingTask] = useState(null);
-  const [editDeadline, setEditDeadline] = useState('');
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [editTaskForm, setEditTaskForm] = useState({
+    taskId: '',
+    title: '',
+    description: '',
+    deadline: ''
+  });
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState('');
@@ -245,12 +250,22 @@ const AdminDashboard = () => {
     }
   };
   
-  const deleteTask = async (taskId) => {
+  const initiateDeleteTask = (taskId, taskTitle) => {
+    setTaskToDelete({ taskId, title: taskTitle });
+    setShowDeleteTaskConfirm(true);
+  };
+  
+  const deleteTask = async () => {
+    if (!taskToDelete) return;
+    
+    const taskId = taskToDelete.taskId;
     setLoadingDeleteTask(prev => ({ ...prev, [taskId]: true }));
     try {
       await axios.delete(`${API_BASE}/tasks/${taskId}`, { headers });
       toast.success('Task deleted successfully');
       fetchTasks();
+      setShowDeleteTaskConfirm(false);
+      setTaskToDelete(null);
     } catch (err) {
       toast.error('Failed to delete task');
       console.error(err);
@@ -259,10 +274,17 @@ const AdminDashboard = () => {
     }
   };
   
+  const cancelDeleteTask = () => {
+    setShowDeleteTaskConfirm(false);
+    setTaskToDelete(null);
+  };
+  
   const [userToDelete, setUserToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userTasks, setUserTasks] = useState([]);
   const [reassignUserId, setReassignUserId] = useState('');
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [showDeleteTaskConfirm, setShowDeleteTaskConfirm] = useState(false);
   
   const initiateDeleteUser = async (userId, userName) => {
     // Prevent deleting your own account
@@ -332,19 +354,70 @@ const AdminDashboard = () => {
     setReassignUserId('');
   };
   
-  const updateTaskDeadline = async () => {
-    if (!editingTask || !editDeadline) return;
+  const initiateEditTask = (task) => {
+    setEditTaskForm({
+      taskId: task.taskId || task.id,
+      title: task.title || '',
+      description: task.description || '',
+      deadline: task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : ''
+    });
+    setShowEditTaskModal(true);
+  };
+  
+  const updateTask = async () => {
+    if (!editTaskForm.taskId) return;
     
     try {
-      await axios.put(`${API_BASE}/tasks/${editingTask}`, { deadline: editDeadline }, { headers });
-      toast.success('Deadline updated successfully');
-      setEditingTask(null);
-      setEditDeadline('');
+      await axios.put(
+        `${API_BASE}/tasks/${editTaskForm.taskId}`, 
+        { 
+          title: editTaskForm.title,
+          description: editTaskForm.description,
+          deadline: editTaskForm.deadline 
+        }, 
+        { headers }
+      );
+      
+      // Update the tasks array directly with the updated task
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          (task.taskId || task.id) === editTaskForm.taskId 
+            ? { 
+                ...task, 
+                title: editTaskForm.title,
+                description: editTaskForm.description,
+                deadline: editTaskForm.deadline
+              } 
+            : task
+        )
+      );
+      
+      toast.success('Task updated successfully');
+      setShowEditTaskModal(false);
+      
+      // Also fetch tasks to ensure we have the latest data
       fetchTasks();
     } catch (err) {
-      toast.error('Failed to update deadline');
+      toast.error('Failed to update task');
       console.error(err);
     }
+  };
+  
+  const handleEditTaskInput = (e) => {
+    setEditTaskForm(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+  
+  const cancelEditTask = () => {
+    setShowEditTaskModal(false);
+    setEditTaskForm({
+      taskId: '',
+      title: '',
+      description: '',
+      deadline: ''
+    });
   };
 
   const handleLogout = () => {
@@ -562,7 +635,6 @@ const AdminDashboard = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delete</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -576,20 +648,7 @@ const AdminDashboard = () => {
                               ? user.tasks.map(task => task.title).join(", ") 
                               : "No tasks assigned"}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => initiateDeleteUser(user.userId, user.name)}
-                              disabled={loadingDeleteUser[user.userId] || user.userId === userPayload?.userId}
-                              className={`p-1 rounded-full ${user.userId === userPayload?.userId ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
-                              title={user.userId === userPayload?.userId ? "Cannot delete your own account" : "Delete User"}
-                            >
-                              {loadingDeleteUser[user.userId] ? (
-                                <div className="h-4 w-4 border-t-2 border-b-2 border-red-600 rounded-full animate-spin"></div>
-                              ) : (
-                                <Trash2 size={16} />
-                              )}
-                            </button>
-                          </td>
+
                         </tr>
                       ))}
                     </tbody>
@@ -688,16 +747,63 @@ const AdminDashboard = () => {
             </div>
             
           
-               <div className='flex flex-row justify-between items-center px-6 py-5 border-gray-200 bg-gray-50'>
-                 <h2 className="text-lg font-semibold text-gray-800">User Registration</h2>
-                <button 
+               <div className='border-gray-200 bg-gray-50 p-4'>
+                  <button 
                   onClick={() => setShowUserModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                  className="flex px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                 >
-                  Add New User
+                  <UserRoundPlus className="mr-2" size={16}/>
+                  Add member
                 </button>
                </div>
                
+              <div className="bg-white rounded-xl shadow-md overflow-hidden mt-4">
+                {loadingUsers && (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+                {usersError && <div className="p-6"><p className="text-red-600 mb-4">{usersError}</p></div>}
+                {!loadingUsers && users.length === 0 && <div className="p-6 text-center text-gray-500">No users found.</div>}
+                {!loadingUsers && users.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.filter(user => user.role !== 'admin').map((user) => (
+                          <tr key={user.id || user.userId} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.userId}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.contact}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() => initiateDeleteUser(user.userId, user.name)}
+                                disabled={loadingDeleteUser[user.userId] || user.userId === userPayload?.userId}
+                                className={`p-1 rounded-full ${user.userId === userPayload?.userId ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+                                title={user.userId === userPayload?.userId ? "Cannot delete your own account" : "Delete User"}
+                              >
+                                {loadingDeleteUser[user.userId] ? (
+                                  <div className="h-4 w-4 border-t-2 border-b-2 border-red-600 rounded-full animate-spin"></div>
+                                ) : (
+                                  <Trash2 size={16} />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              
               <div className="p-8">
                 {/* User registration modal */}
                 <Modal 
@@ -707,7 +813,7 @@ const AdminDashboard = () => {
                     clearUserForm();
                     setUserError('');
                   }}
-                  title="Register New User"
+                  title="Create Team Member"
                 >
                   {userError && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg shadow-sm" role="alert">
@@ -766,7 +872,7 @@ const AdminDashboard = () => {
                           : ''
                       }`}
                     >
-                      {loadingCreateUser ? 'Processing...' : 'Register User'}
+                      {loadingCreateUser ? 'Processing...' : 'Create member'}
                     </button>
                   </div>
                 </Modal>
@@ -784,7 +890,7 @@ const AdminDashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="">
-                <div className=" flex flex-row gap-2">
+                <div className=" flex flex-row gap-4">
                   
                   <button 
 
@@ -898,7 +1004,7 @@ const AdminDashboard = () => {
                       clearAssignForm();
                       setAssignError('');
                     }}
-                    title="Assign Task to User"
+                    title="Assign Task to Team Member"
                   >
                     {assignError && (
                       <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg shadow-sm" role="alert">
@@ -947,7 +1053,7 @@ const AdminDashboard = () => {
                           onChange={handleAssignInput}
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
                         >
-                          <option value="" disabled>Choose a user to assign</option>
+                          <option value="" disabled>Choose a member to assign</option>
                           {users
                             .filter(user => user.role === 'user')
                             .map(user => (
@@ -962,7 +1068,7 @@ const AdminDashboard = () => {
                           </svg>
                         </div>
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">Select the user who will be responsible for this task</p>
+                      <p className="mt-1 text-xs text-gray-500">Select the team member who will be responsible for this task</p>
                     </div>
                     <div className="mt-6 flex justify-end space-x-3">
                       <button
@@ -984,7 +1090,7 @@ const AdminDashboard = () => {
                           !assignForm.taskId.trim() ||
                           !assignForm.userId.trim()
                         }
-                        className={`px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 ${
+                        className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
                           loadingAssignTask || !assignForm.taskId.trim() || !assignForm.userId.trim()
                             ? 'opacity-50 cursor-not-allowed' 
                             : ''
@@ -1043,63 +1149,29 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.title}</td>
                           <td className="px-6 py-4 text-sm text-gray-500">{task.description}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {editingTask === (task.taskId || task.id) ? (
-                              <input
-                                type="datetime-local"
-                                value={editDeadline}
-                                onChange={(e) => setEditDeadline(e.target.value)}
-                                className="border border-gray-300 rounded px-2 py-1 text-sm"
-                              />
-                            ) : (
-                              <div className="flex items-center">
-                                <Clock size={16} className="mr-1 text-gray-400" />
-                                {new Date(task.deadline).toLocaleString('en-US', {
-                                  dateStyle: 'medium',
-                                  timeStyle: 'short',
-                                })}
-                              </div>
-                            )}
+                            <div className="flex items-center">
+                              <Clock size={16} className="mr-1 text-gray-400" />
+                              {new Date(task.deadline).toLocaleString('en-US', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={getStatusClass(task.status)}>{task.status || 'N/A'}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {editingTask === (task.taskId || task.id) ? (
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={updateTaskDeadline}
-                                  className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                                  title="Save"
-                                >
-                                  <Check size={16} />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingTask(null);
-                                    setEditDeadline('');
-                                  }}
-                                  className="p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                  title="Cancel"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setEditingTask(task.taskId || task.id);
-                                  setEditDeadline(task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : '');
-                                }}
-                                className="p-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                title="Edit Deadline"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => initiateEditTask(task)}
+                              className="p-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200"
+                              title="Edit Task"
+                            >
+                              <Pencil size={16} />
+                            </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() => deleteTask(task.taskId || task.id)}
+                              onClick={() => initiateDeleteTask(task.taskId || task.id, task.title)}
                               disabled={loadingDeleteTask[task.taskId || task.id]}
                               className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
                               title="Delete Task"
@@ -1222,7 +1294,7 @@ const AdminDashboard = () => {
             
             <div className="mb-6">
               <label className="block text-gray-700 text-sm font-medium mb-2">
-                Reassign tasks to another user (optional):
+                Reassign tasks to another member (optional):
               </label>
               <select
                 value={reassignUserId}
@@ -1252,6 +1324,101 @@ const AdminDashboard = () => {
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Task Confirmation Modal */}
+      {showDeleteTaskConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Delete Task</h3>
+              <button 
+                onClick={cancelDeleteTask}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete task <span className="font-semibold">[{taskToDelete?.taskId}] {taskToDelete?.title}</span>?
+              This action cannot be undone.
+            </p>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={cancelDeleteTask}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteTask}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Task Modal */}
+      {showEditTaskModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Edit Task</h3>
+              <button 
+                onClick={cancelEditTask}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <InputField
+              label="Title"
+              id="edit-title"
+              name="title"
+              value={editTaskForm.title}
+              onChange={handleEditTaskInput}
+              placeholder="Enter task title"
+            />
+            
+            <InputField
+              label="Description"
+              id="edit-description"
+              name="description"
+              value={editTaskForm.description}
+              onChange={handleEditTaskInput}
+              placeholder="Enter task description"
+            />
+            
+            <InputField
+              label="Deadline"
+              id="edit-deadline"
+              name="deadline"
+              type="datetime-local"
+              value={editTaskForm.deadline}
+              onChange={handleEditTaskInput}
+            />
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={cancelEditTask}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updateTask}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Update Task
               </button>
             </div>
           </div>
