@@ -916,13 +916,13 @@ module.exports.deleteTask = async (event) => {
   }
 };
 
-// Update task deadline (only admin)
-module.exports.updateTaskDeadline = async (event) => {
+// Update task details (only admin)
+module.exports.updateTaskDetails = async (event) => {
   if (!checkRole(event, ['admin'])) {
     return {
       statusCode: 403,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Forbidden: only admins can update task deadlines' }),
+      body: JSON.stringify({ error: 'Forbidden: only admins can update task details' }),
     };
   }
 
@@ -946,12 +946,12 @@ module.exports.updateTaskDeadline = async (event) => {
     };
   }
 
-  const { deadline } = data;
-  if (!deadline) {
+  const { title, description, deadline } = data;
+  if (!title && !description && !deadline) {
     return {
       statusCode: 400,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Missing deadline field' }),
+      body: JSON.stringify({ error: 'Missing update fields: provide at least one of title, description, or deadline' }),
     };
   }
 
@@ -970,29 +970,47 @@ module.exports.updateTaskDeadline = async (event) => {
       };
     }
 
-    // Update the task deadline
+    // Build update expression and attribute values dynamically
+    let updateExpression = 'set updatedAt = :updatedAt';
+    const expressionAttributeValues = {
+      ':updatedAt': new Date().toISOString(),
+    };
+
+    if (title) {
+      updateExpression += ', title = :title';
+      expressionAttributeValues[':title'] = title;
+    }
+
+    if (description !== undefined) {
+      updateExpression += ', description = :description';
+      expressionAttributeValues[':description'] = description;
+    }
+
+    if (deadline) {
+      updateExpression += ', deadline = :deadline';
+      expressionAttributeValues[':deadline'] = deadline;
+    }
+
+    // Update the task details
     await dynamoDb.update({
       TableName: TASKS_TABLE,
       Key: { taskId },
-      UpdateExpression: 'set deadline = :deadline, updatedAt = :updatedAt',
-      ExpressionAttributeValues: {
-        ':deadline': deadline,
-        ':updatedAt': new Date().toISOString(),
-      },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'UPDATED_NEW',
     }).promise();
 
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify({ message: 'Task deadline updated successfully' }),
+      body: JSON.stringify({ message: 'Task details updated successfully' }),
     };
   } catch (error) {
-    console.error('Error updating task deadline:', error);
+    console.error('Error updating task details:', error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Could not update task deadline', details: error.message }),
+      body: JSON.stringify({ error: 'Could not update task details', details: error.message }),
     };
   }
 };
