@@ -2,6 +2,8 @@ name: Deploy to S3 and CloudFront
 
 on:
   push:
+    paths:
+      - 'README.md'
     branches:
       - main
 
