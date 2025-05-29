@@ -461,19 +461,28 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gray-50 shadow-sm z-20 flex items-center justify-between px-6">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 to-blue-800 shadow-md z-20 flex items-center justify-between px-6">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold text-blue-600">Task Management</h1>
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white mr-2">
+            <path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"></path>
+            <circle cx="18" cy="18" r="3"></circle>
+            <path d="M18 14v1"></path>
+            <path d="M18 21v1"></path>
+            <path d="M22 18h-1"></path>
+            <path d="M15 18h-1"></path>
+          </svg>
+          <h1 className="text-xl font-bold text-white">Task Management System</h1>
         </div>
         
         <div className="navbar flex items-center">
-          <div className="flex items-center">
-            <div className="p-2 rounded-full bg-blue-100 text-blue-600">
-              <User size={24} />
+          
+          <div className="flex items-center bg-white/10 rounded-full pl-2 pr-4 py-1.5 backdrop-blur-sm">
+            <div className="p-1.5 rounded-full bg-white/20 text-white mr-2">
+              <User size={18} />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{userPayload?.name || userPayload?.userId || 'Admin'}</p>
-              <p className="text-xs text-gray-500 capitalize">Administrator</p>
+            <div>
+              <p className="text-sm font-medium text-white">{userPayload?.name || userPayload?.userId || 'Admin'}</p>
+              <p className="text-xs text-white/70 capitalize">Administrator</p>
             </div>
           </div>
         </div>
@@ -481,55 +490,69 @@ const AdminDashboard = () => {
       
       {/* Sidebar */}
       <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-md z-10">
-        <nav className="mt-6 px-4">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
-              activeTab === 'dashboard' 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-          >
-            <LayoutDashboard className="mr-3" size={20} />
-            <span className="font-medium">Dashboard</span>
-          </button>
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold">
+                {userPayload?.name?.charAt(0) || 'A'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{userPayload?.name || userPayload?.userId || 'Admin'}</p>
+                <p className="text-xs text-gray-500">Admin Dashboard</p>
+              </div>
+            </div>
+          </div>
           
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
-              activeTab === 'users' 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-          >
-            <Users className="mr-3" size={20} />
-            <span className="font-medium">Users</span>
-          </button>
+          <nav className="flex-1 px-4 py-4 overflow-y-auto">
+            <div className="mb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</div>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+                activeTab === 'dashboard' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <LayoutDashboard className="mr-3" size={18} />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            
+            <div className="mb-2 mt-6 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Management</div>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+                activeTab === 'users' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <Users className="mr-3" size={18} />
+              <span className="font-medium">Users</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+                activeTab === 'tasks' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <ListChecks className="mr-3" size={18} />
+              <span className="font-medium">Tasks</span>
+            </button>
+          </nav>
           
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
-              activeTab === 'tasks' 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-          >
-            <ListChecks className="mr-3" size={20} />
-            <span className="font-medium">Tasks</span>
-          </button>
-          
-          <div className="absolute bottom-4 left-0 right-0 px-4">
+          <div className="p-4 border-t border-gray-100">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
-              <LogOut className="mr-3" size={20} />
+              <LogOut className="mr-3" size={18} />
               <span className="font-medium">Logout</span>
             </button>
           </div>
-        </nav>
-        
-
+        </div>
       </div>
 
       {/* Main Content */}
