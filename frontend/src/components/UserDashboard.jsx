@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { LayoutDashboard } from 'lucide-react';
@@ -57,12 +57,10 @@ const UserDashboard = () => {
   const role = localStorage.getItem('role');
   const userPayload = decodeJwtPayload(token);
 
-  const headers = useMemo(() => ({
+  const headers = {
     Authorization: `Bearer ${token}`,
-    'x-user-id': userId,
-    'x-user-role': role,
     'Content-Type': 'application/json',
-  }), [token, userId, role]);
+  };
 
   useEffect(() => {
     if (!token || !userPayload) {
@@ -75,7 +73,7 @@ const UserDashboard = () => {
     window.location.reload();
   };
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = async () => {
     try {
       const res = await axios.get(`${API_BASE}/tasks/mytasks`, {
         headers,
@@ -88,14 +86,14 @@ const UserDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [headers, userId]);
+  };
 
   const updateStatus = async (taskId, newStatus) => {
     setUpdating((prev) => ({ ...prev, [taskId]: true }));
     try {
       await axios.post(
         `${API_BASE}/tasks/update-status`,
-        { taskId, status: newStatus, userId, role },
+        { taskId, status: newStatus },
         { headers }
       );
       fetchTasks();
@@ -110,7 +108,7 @@ const UserDashboard = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, []);
 
   const DashboardView = () => {
     if (loading) return (
@@ -471,7 +469,7 @@ const UserDashboard = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-white">{userPayload?.name || 'User'}</p>
-              <p className="text-xs text-white/70">{userId}</p>
+              <p className="text-xs text-white/70 capitalize">{userId}</p>
             </div>
           </div>
         </div>
