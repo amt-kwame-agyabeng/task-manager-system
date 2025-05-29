@@ -19,7 +19,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-user-id,x-user-role',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
   'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE',
 };
 
@@ -131,7 +131,7 @@ module.exports.login = async (event) => {
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: '23h', // token expiry
+      expiresIn: '24h', // token expiry
     });
 
     return {
@@ -671,31 +671,33 @@ module.exports.getUpcomingDeadlines = async (event) => {
 
 
 
-// Update task status (assigned user)
+// Update task status (both admin and assigned user)
 module.exports.updateTaskStatus = async (event) => {
   const data = JSON.parse(event.body);
   const { taskId, status } = data;
 
-  const userId = event.headers['x-user-id'] || event.headers['X-User-Id'];
-  const role = event.headers['x-user-role'] || event.headers['X-User-Role'];
+  // Get user info from JWT token instead of headers
+  const decoded = verifyToken(event);
+  if (!decoded) {
+    return {
+      statusCode: 401,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Unauthorized: Invalid or missing token' }),
+    };
+  }
 
-  if (!taskId || !status || !userId || !role) {
+  const userId = decoded.userId;
+  const role = decoded.role;
+
+  if (!taskId || !status) {
     return {
       statusCode: 400,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Missing required fields or headers' }),
+      body: JSON.stringify({ error: 'Missing required fields' }),
     };
   }
 
-  if (role !== 'user') {
-    return {
-      statusCode: 403,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Forbidden: only assigned users can update task status' }),
-    };
-  }
-
-  // Fetch the task to verify assignment
+  // Fetch the task
   try {
     const getParams = {
       TableName: TASKS_TABLE,
@@ -714,14 +716,14 @@ module.exports.updateTaskStatus = async (event) => {
 
     const task = taskResult.Item;
 
-    if (task.assignedTo !== userId) {
+    // Check permissions: admin can update any task, user can only update their assigned tasks
+    if (role !== 'admin' && task.assignedTo !== userId) {
       return {
         statusCode: 403,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'You are not assigned to this task' }),
+        body: JSON.stringify({ error: 'You are not authorized to update this task' }),
       };
     }
-
 
     // Update the task status
     const updateParams = {
@@ -916,15 +918,20 @@ module.exports.deleteTask = async (event) => {
   }
 };
 
-// Update task details (only admin)
+// Update task details (admin and assigned users)
 module.exports.updateTaskDetails = async (event) => {
-  if (!checkRole(event, ['admin'])) {
+  // Get user info from JWT token
+  const decoded = verifyToken(event);
+  if (!decoded) {
     return {
-      statusCode: 403,
+      statusCode: 401,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Forbidden: only admins can update task details' }),
+      body: JSON.stringify({ error: 'Unauthorized: Invalid or missing token' }),
     };
   }
+  
+  const userId = decoded.userId;
+  const role = decoded.role;
 
   const taskId = event.pathParameters?.taskId;
   if (!taskId) {
@@ -946,12 +953,12 @@ module.exports.updateTaskDetails = async (event) => {
     };
   }
 
-  const { title, description, deadline } = data;
-  if (!title && !description && !deadline) {
+  const { title, description, deadline, status } = data;
+  if (!title && !description && !deadline && !status) {
     return {
       statusCode: 400,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Missing update fields: provide at least one of title, description, or deadline' }),
+      body: JSON.stringify({ error: 'Missing update fields: provide at least one of title, description, deadline, or status' }),
     };
   }
 
@@ -969,12 +976,24 @@ module.exports.updateTaskDetails = async (event) => {
         body: JSON.stringify({ error: 'Task not found' }),
       };
     }
+    
+    const task = getResult.Item;
+    
+    // Check permissions: admin can update any task, user can only update their assigned tasks
+    if (role !== 'admin' && task.assignedTo !== userId) {
+      return {
+        statusCode: 403,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'You are not authorized to update this task' }),
+      };
+    }
 
     // Build update expression and attribute values dynamically
     let updateExpression = 'set updatedAt = :updatedAt';
     const expressionAttributeValues = {
       ':updatedAt': new Date().toISOString(),
     };
+    let expressionAttributeNames = null;
 
     if (title) {
       updateExpression += ', title = :title';
@@ -990,15 +1009,29 @@ module.exports.updateTaskDetails = async (event) => {
       updateExpression += ', deadline = :deadline';
       expressionAttributeValues[':deadline'] = deadline;
     }
+    
+    if (status) {
+      updateExpression += ', #status = :status';
+      expressionAttributeNames = expressionAttributeNames || {};
+      expressionAttributeNames['#status'] = 'status';
+      expressionAttributeValues[':status'] = status;
+    }
 
     // Update the task details
-    await dynamoDb.update({
+    const updateParams = {
       TableName: TASKS_TABLE,
       Key: { taskId },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'UPDATED_NEW',
-    }).promise();
+    };
+    
+    // Add ExpressionAttributeNames if needed
+    if (expressionAttributeNames) {
+      updateParams.ExpressionAttributeNames = expressionAttributeNames;
+    }
+    
+    await dynamoDb.update(updateParams).promise();
 
     return {
       statusCode: 200,
