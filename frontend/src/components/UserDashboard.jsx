@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { LayoutDashboard } from 'lucide-react';
@@ -32,13 +32,13 @@ const decodeJwtPayload = (token) => {
 const getStatusClass = (status) => {
   switch (status) {
     case 'Pending':
-      return 'text-yellow-700 bg-yellow-100 rounded-full px-3 py-1 text-xs';
+      return 'text-yellow-700 bg-yellow-100 rounded px-2 py-1 text-xs';
     case 'In Progress':
-      return 'text-blue-700 bg-blue-100 rounded-full px-3 py-1 text-xs';
+      return 'text-blue-700 bg-blue-100 rounded px-2 py-1 text-xs';
     case 'Completed':
-      return 'text-green-700 bg-green-100 rounded-full px-3 py-1 text-xs';
+      return 'text-green-700 bg-green-100 rounded px-2 py-1 text-xs';
     default:
-      return 'text-gray-700 bg-gray-100 rounded-full px-3 py-1 text-xs';
+      return 'text-gray-700 bg-gray-100 rounded px-2 py-1 text-xs';
   }
 };
 
@@ -57,12 +57,12 @@ const UserDashboard = () => {
   const role = localStorage.getItem('role');
   const userPayload = decodeJwtPayload(token);
 
-  const headers = {
+  const headers = useMemo(() => ({
     Authorization: `Bearer ${token}`,
     'x-user-id': userId,
     'x-user-role': role,
     'Content-Type': 'application/json',
-  };
+  }), [token, userId, role]);
 
   useEffect(() => {
     if (!token || !userPayload) {
@@ -75,7 +75,7 @@ const UserDashboard = () => {
     window.location.reload();
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE}/tasks/mytasks`, {
         headers,
@@ -88,7 +88,7 @@ const UserDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [headers, userId]);
 
   const updateStatus = async (taskId, newStatus) => {
     setUpdating((prev) => ({ ...prev, [taskId]: true }));
@@ -110,7 +110,7 @@ const UserDashboard = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   const DashboardView = () => {
     if (loading) return (
@@ -342,13 +342,10 @@ const UserDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {updating[task.taskId] ? (
-                          <div className="animate-pulse flex items-center">
-                            <div className="h-4 w-4 mr-2 rounded-full bg-blue-400"></div>
-                            <span className="text-sm text-gray-500">Updating...</span>
-                          </div>
+                          <span className="text-sm text-gray-500">Updating...</span>
                         ) : (
                           <select
-                            className="border border-gray-300 rounded-md px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             value={task.status}
                             onChange={(e) => updateStatus(task.taskId, e.target.value)}
                             disabled={updating[task.taskId]}
@@ -449,23 +446,32 @@ const UserDashboard = () => {
       </div>
     );
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-20 flex items-center justify-between px-6">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 to-blue-800 shadow-md z-20 flex items-center justify-between px-6">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold text-blue-600">Task Management</h1>
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white mr-2">
+            <path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"></path>
+            <circle cx="18" cy="18" r="3"></circle>
+            <path d="M18 14v1"></path>
+            <path d="M18 21v1"></path>
+            <path d="M22 18h-1"></path>
+            <path d="M15 18h-1"></path>
+          </svg>
+          <h1 className="text-xl font-bold text-white">Task Management System</h1>
         </div>
         
         <div className="navbar flex items-center">
-          <div className="flex items-center">
-            <div className="p-2 rounded-full bg-blue-100 text-blue-600">
-              <User size={24} />
+          <div className="flex items-center bg-white/10 rounded-full pl-2 pr-4 py-1.5 backdrop-blur-sm">
+            <div className="p-1.5 rounded-full bg-white/20 text-white mr-2">
+              <User size={18} />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{userPayload?.name || 'User'}</p>
-              <p className="text-xs text-gray-500 capitalize">{role}</p>
+            <div>
+              <p className="text-sm font-medium text-white">{userPayload?.name || 'User'}</p>
+              <p className="text-xs text-white/70">{userId}</p>
             </div>
           </div>
         </div>
@@ -473,42 +479,57 @@ const UserDashboard = () => {
       
       {/* Sidebar */}
       <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-md z-10">
-        
-        <nav className="mt-6 px-4">
-          <button
-            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
-              activeTab === 'dashboard' 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <LayoutDashboard className="mr-3" size={20} />
-            <span className="font-medium">Dashboard</span>
-          </button>
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold">
+                {userPayload?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{userPayload?.name || 'User'}</p>
+                <p className="text-xs text-gray-500">Team Member</p>
+              </div>
+            </div>
+          </div>
           
-          <button
-            className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
-              activeTab === 'tasks' 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-            }`}
-            onClick={() => setActiveTab('tasks')}
-          >
-            <ListChecks className="mr-3" size={20} />
-            <span className="font-medium">Tasks</span>
-          </button>
+          <nav className="flex-1 px-4 py-4 overflow-y-auto">
+            <div className="mb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</div>
+            <button
+              className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+                activeTab === 'dashboard' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              <LayoutDashboard className="mr-3" size={18} />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            
+            <div className="mb-2 mt-6 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Work</div>
+            <button
+              className={`flex items-center w-full px-4 py-3 mb-2 rounded-lg transition-colors ${
+                activeTab === 'tasks' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+              onClick={() => setActiveTab('tasks')}
+            >
+              <ListChecks className="mr-3" size={18} />
+              <span className="font-medium">Tasks</span>
+            </button>
+          </nav>
           
-          <div className="absolute bottom-4 left-0 right-0 px-4">
+          <div className="p-4 border-t border-gray-100">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
-              <LogOut className="mr-3" size={20} />
+              <LogOut className="mr-3" size={18} />
               <span className="font-medium">Logout</span>
             </button>
           </div>
-        </nav>
+        </div>
       </div>
 
       {/* Main Content */}
