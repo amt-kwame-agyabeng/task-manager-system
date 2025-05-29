@@ -115,7 +115,8 @@ const AdminDashboard = () => {
     taskId: '',
     title: '',
     description: '',
-    deadline: ''
+    deadline: '',
+    status: 'Pending'
   });
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -123,7 +124,10 @@ const AdminDashboard = () => {
   const [loadingDeleteUser, setLoadingDeleteUser] = useState({});
 
   const token = localStorage.getItem('token');
-  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const headers = useMemo(() => ({ 
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }), [token]);
 
   const userPayload = decodeJwtPayload(token);
 
@@ -359,7 +363,8 @@ const AdminDashboard = () => {
       taskId: task.taskId || task.id,
       title: task.title || '',
       description: task.description || '',
-      deadline: task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : ''
+      deadline: task.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : '',
+      status: task.status || 'Pending'
     });
     setShowEditTaskModal(true);
   };
@@ -373,6 +378,7 @@ const AdminDashboard = () => {
       if (editTaskForm.title) updateData.title = editTaskForm.title;
       if (editTaskForm.description !== undefined) updateData.description = editTaskForm.description;
       if (editTaskForm.deadline) updateData.deadline = editTaskForm.deadline;
+      if (editTaskForm.status) updateData.status = editTaskForm.status;
       
       await axios.put(
         `${API_BASE}/tasks/${editTaskForm.taskId}`, 
@@ -416,7 +422,8 @@ const AdminDashboard = () => {
       taskId: '',
       title: '',
       description: '',
-      deadline: ''
+      deadline: '',
+      status: 'Pending'
     });
   };
 
@@ -1429,6 +1436,30 @@ const AdminDashboard = () => {
               value={editTaskForm.deadline}
               onChange={handleEditTaskInput}
             />
+            
+            <div className="mb-4 flex flex-col w-full">
+              <label htmlFor="edit-status" className="mb-1 font-medium text-gray-700">
+                Status
+              </label>
+              <div className="relative">
+                <select
+                  id="edit-status"
+                  name="status"
+                  value={editTaskForm.status}
+                  onChange={handleEditTaskInput}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
             
             <div className="flex justify-end space-x-3 mt-6">
               <button
