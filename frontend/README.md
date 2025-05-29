@@ -1,70 +1,164 @@
-# Getting Started with Create React App
+# Task Management System - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the frontend application for the Task Management System, built with React and modern web technologies to provide an intuitive interface for task management.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+The frontend application provides two main interfaces:
 
-### `npm start`
+1. **Admin Dashboard**: For administrators to manage users, create tasks, assign tasks to users, and monitor overall progress
+2. **User Dashboard**: For team members to view and update the status of tasks assigned to them
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Technologies Used
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **React**: JavaScript library for building user interfaces
+- **Axios**: HTTP client for API requests
+- **React Router**: For navigation between different views
+- **Tailwind CSS**: For styling and responsive design
+- **Lucide React**: For icons
+- **React Hot Toast**: For notifications
+- **JWT**: For secure authentication
 
-### `npm test`
+## Project Structure
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+frontend/
+├── public/             # Public assets
+├── src/                # Source code
+│   ├── components/     # React components
+│   │   ├── AdminDashboard.jsx  # Admin interface
+│   │   ├── UserDashboard.jsx   # User interface
+│   │   ├── Login.jsx           # Login page
+│   │   └── ...                 # Other components
+│   ├── App.js          # Main application component
+│   ├── index.js        # Entry point
+│   └── ...             # Other files
+├── package.json        # Dependencies and scripts
+└── .env                # Environment variables
+```
 
-### `npm run build`
+## Key Components
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### AdminDashboard.jsx
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+The admin dashboard provides functionality for:
+- Creating and managing users
+- Creating tasks
+- Assigning tasks to users
+- Updating task details and status
+- Deleting tasks
+- Viewing statistics and progress
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### UserDashboard.jsx
 
-### `npm run eject`
+The user dashboard allows team members to:
+- View tasks assigned to them
+- Update task status (Pending, In Progress, Completed)
+- View task details and deadlines
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Login.jsx
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Handles user authentication with:
+- Login form
+- JWT token storage
+- Role-based redirection
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Setup and Installation
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Prerequisites
 
-## Learn More
+- Node.js (v14 or later)
+- npm or yarn
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Environment Variables
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Create a `.env` file in the frontend directory with the following variables:
 
-### Code Splitting
+```
+REACT_APP_API_BASE=https://your-api-endpoint.execute-api.region.amazonaws.com/dev
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Replace the URL with your actual API endpoint.
 
-### Analyzing the Bundle Size
+### Installation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+1. Install dependencies:
+   ```
+   npm install
+   ```
 
-### Making a Progressive Web App
+2. Start the development server:
+   ```
+   npm start
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+3. Build for production:
+   ```
+   npm run build
+   ```
 
-### Advanced Configuration
+## Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Build the Application
 
-### Deployment
+```
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+This creates a `build` directory with optimized production files.
 
-### `npm run build` fails to minify
+### Deploy to AWS S3 and CloudFront
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. Create an S3 bucket for hosting:
+   ```
+   aws s3 mb s3://your-bucket-name
+   ```
+
+2. Configure the bucket for static website hosting:
+   ```
+   aws s3 website s3://your-bucket-name --index-document index.html --error-document index.html
+   ```
+
+3. Upload the build files:
+   ```
+   aws s3 sync build/ s3://your-bucket-name --acl public-read
+   ```
+
+4. Set up CloudFront distribution for better performance and HTTPS:
+   - The application is currently available at: [https://d3g452bocfjgmb.cloudfront.net/](https://d3g452bocfjgmb.cloudfront.net/)
+
+## Usage
+
+### Login
+
+- Use the provided credentials to log in
+- The system will automatically redirect to the appropriate dashboard based on user role
+
+### Admin Functions
+
+- **Create Users**: Add team members with email notifications
+- **Create Tasks**: Define tasks with titles, descriptions, and deadlines
+- **Assign Tasks**: Assign tasks to specific team members
+- **Monitor Progress**: View task status and completion rates
+
+### User Functions
+
+- **View Tasks**: See all assigned tasks
+- **Update Status**: Change task status as work progresses
+- **Dashboard**: View task statistics and upcoming deadlines
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Connection Problems**:
+   - Check that the REACT_APP_API_BASE environment variable is set correctly
+   - Verify that CORS is properly configured on the backend
+
+2. **Authentication Issues**:
+   - Clear browser storage and try logging in again
+   - Check that the JWT token is being properly stored and sent with requests
+
+3. **Display Problems**:
+   - If the UI looks broken, make sure Tailwind CSS is properly installed
+   - Check for console errors in the browser developer tools
