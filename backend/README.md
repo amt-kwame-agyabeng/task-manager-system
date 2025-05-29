@@ -1,155 +1,192 @@
 # Task Management System - Backend
 
-The backend component of the Task Management System, built with Serverless Framework, AWS Lambda, and DynamoDB.
+This is the serverless backend for the Task Management System, built with AWS Lambda, API Gateway, and DynamoDB to provide a scalable and cost-effective solution.
 
-## Architecture
+## Overview
 
-This backend follows a serverless architecture pattern using:
+The backend provides a complete API for task management, user authentication, and data storage. It uses a serverless architecture to ensure high availability and automatic scaling based on demand.
 
-- **AWS Lambda**: For executing code in response to events
-- **API Gateway**: For handling HTTP requests
-- **DynamoDB**: NoSQL database for storing application data
+## Technologies Used
+
+- **AWS Lambda**: For serverless function execution
+- **Amazon API Gateway**: For RESTful API endpoints
+- **Amazon DynamoDB**: For NoSQL database storage
 - **Serverless Framework**: For infrastructure as code and deployment
+- **Node.js**: Runtime environment
+- **JWT**: For secure authentication
+- **bcryptjs**: For password hashing
+- **Nodemailer**: For sending email notifications for user registration and task assignments
 
-## Core Components
+## Project Structure
 
-### 1. API Endpoints
+```
+backend/
+├── handler.js          # Main Lambda functions
+├── deadlineNotifier.js # Scheduled functions for deadline notifications
+├── serverless.yml      # Serverless Framework configuration
+├── package.json        # Dependencies and scripts
+└── .env                # Environment variables (not in repository)
+```
 
-| Endpoint | Method | Description | Role |
-|----------|--------|-------------|------|
-| `/login` | POST | Authenticate users | Public |
-| `/set-password` | POST | Set user password | Public |
-| `/users` | GET | Get all users | Admin |
-| `/users/create` | POST | Create a new user | Admin |
-| `/users/{userId}` | DELETE | Delete a user | Admin |
-| `/tasks` | GET | Get all tasks | Admin |
-| `/tasks/create` | POST | Create a new task | Admin |
-| `/tasks/assign` | POST | Assign task to user | Admin |
-| `/tasks/mytasks` | GET | Get tasks assigned to current user | User |
-| `/tasks/upcoming-deadlines` | GET | Get tasks with upcoming deadlines | User/Admin |
-| `/tasks/update-status` | POST | Update task status | User |
-| `/tasks/{taskId}` | DELETE | Delete a task | Admin |
-| `/tasks/{taskId}` | PUT | Update task deadline | Admin |
+## API Endpoints
 
-### 2. Database Schema
+### Authentication
 
-#### Users Table
+- **POST /login**: Authenticate user and return JWT token
+- **POST /set-password**: Set or reset user password
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| userId | String | Primary key |
-| name | String | User's full name |
-| role | String | User role (admin/user) |
-| contact | String | User's email address |
-| password | String | Hashed password |
-| passwordSetupToken | String | Token for password setup (temporary) |
-| tokenExpiresAt | Number | Expiration timestamp for setup token |
-| createdAt | String | Creation timestamp |
-| updatedAt | String | Last update timestamp |
+### User Management
 
-#### Tasks Table
+- **GET /users**: Get all users (admin only)
+- **POST /users/create**: Create a new user (admin only)
+- **DELETE /users/{userId}**: Delete a user (admin only)
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| taskId | String | Primary key |
-| title | String | Task title |
-| description | String | Task description |
-| status | String | Task status (Pending/In Progress/Completed) |
-| deadline | String | Task deadline timestamp |
-| assignedTo | String | User ID of assigned user |
-| deadlineNotificationSent | Boolean | Whether notification has been sent |
-| createdAt | String | Creation timestamp |
-| updatedAt | String | Last update timestamp |
+### Task Management
 
-### 3. Core Files
+- **GET /tasks**: Get all tasks (admin only)
+- **GET /tasks/mytasks**: Get tasks assigned to the logged-in user
+- **GET /tasks/upcoming-deadlines**: Get tasks with upcoming deadlines
+- **POST /tasks/create**: Create a new task (admin only)
+- **POST /tasks/assign**: Assign a task to a user (admin only)
+- **POST /tasks/update-status**: Update task status
+- **PUT /tasks/{taskId}**: Update task details
+- **DELETE /tasks/{taskId}**: Delete a task (admin only)
 
-- **handler.js**: Contains all API endpoint handlers
-- **deadlineNotifier.js**: Contains scheduled functions for deadline notifications
-- **authMiddleware.js**: Authentication and authorization utilities
-- **serverless.yml**: Infrastructure configuration
+## Database Schema
 
-## Authentication & Authorization
+### Users Table
 
-- JWT-based authentication system
-- Role-based access control (RBAC)
-- Secure password handling with bcrypt
+- **userId** (String): Primary key
+- **name** (String): User's full name
+- **role** (String): User role ('admin' or 'user/team member')
+- **contact** (String): Email address (with GSI for lookup)
+- **password** (String): Hashed password
+- **createdAt** (String): ISO timestamp
+- **updatedAt** (String): ISO timestamp
 
-## Scheduled Tasks
+### Tasks Table
 
-| Function | Schedule | Description |
-|----------|----------|-------------|
-| checkDeadlines | Every hour | Checks for upcoming deadlines and sends notifications |
-| resetNotificationFlags | Every 6 hours | Resets notification flags for tasks outside notification window |
+- **taskId** (String): Primary key
+- **title** (String): Task title
+- **description** (String): Task description
+- **status** (String): Task status ('Pending', 'In Progress', 'Completed')
+- **deadline** (String): ISO timestamp for deadline
+- **assignedTo** (String): User ID of assigned user (with GSI for lookup)
+- **createdAt** (String): ISO timestamp
+- **updatedAt** (String): ISO timestamp
 
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| USERS_TABLE | DynamoDB table name for users |
-| TASKS_TABLE | DynamoDB table name for tasks |
-| DEFAULT_ADMIN_ID | Default admin user ID |
-| DEFAULT_ADMIN_EMAIL | Default admin email |
-| DEFAULT_ADMIN_PASSWORD | Default admin password |
-| JWT_SECRET | Secret key for JWT signing |
-| APP_URL | Frontend application URL |
-| GMAIL_USER | Gmail account for sending notifications |
-| GMAIL_APP_PASS | Gmail app password |
-
-## Setup & Deployment
+## Setup and Installation
 
 ### Prerequisites
 
-- Node.js (v14+)
-- AWS Account with appropriate permissions
-- Serverless Framework CLI
-- AWS CLI configured with credentials
+- Node.js (v14 or later)
+- npm or yarn
+- AWS account
+- AWS CLI configured with appropriate permissions
+- Serverless Framework installed globally (`npm install -g serverless`)
 
-### Local Development
+### Environment Variables
+
+Create a `.env` file in the backend directory with the following variables:
+
+```
+DEFAULT_ADMIN_ID=admin
+DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_PASSWORD=securepassword
+JWT_SECRET=your-jwt-secret-key
+APP_URL=http://localhost:3000
+GMAIL_USER=your-gmail@gmail.com
+GMAIL_APP_PASS=your-gmail-app-password
+```
+
+### Installation
 
 1. Install dependencies:
    ```
    npm install
    ```
 
-2. Create a `.env` file with required environment variables:
+2. Deploy to AWS:
    ```
-   cp .env.example .env
-   ```
-
-3. Run locally using Serverless Offline (if needed):
-   ```
-   serverless offline
+   serverless deploy
    ```
 
-### Deployment
+3. Initialize the admin user:
+   ```
+   curl -X POST https://your-api-endpoint.execute-api.region.amazonaws.com/dev/init-admin
+   ```
 
-Deploy to AWS:
+## Deployment
+
+The backend is deployed using the Serverless Framework, which creates all necessary AWS resources automatically.
+
+### Deploy to AWS
+
 ```
 serverless deploy
 ```
 
-For a specific stage (e.g., dev, prod):
+This command deploys:
+- Lambda functions
+- API Gateway endpoints
+- DynamoDB tables
+- IAM roles and permissions
+- CloudWatch event triggers for scheduled functions
+
+### Environment-Specific Deployment
+
 ```
-serverless deploy --stage prod
+serverless deploy --stage production
 ```
 
-## Security Considerations
+## Security Features
 
-- All passwords are hashed using bcrypt
-- JWT tokens expire after 23 hours
-- CORS is configured to allow only specific origins
-- IAM roles are configured with least privilege principle
-- Environment variables are used for sensitive information
+1. **Password Security**:
+   - Passwords are hashed using bcrypt
+   - Password reset tokens are time-limited
 
-## Monitoring & Logging
+2. **Authentication**:
+   - JWT tokens with expiration
+   - Role-based access control
 
-- CloudWatch Logs for Lambda function logs
-- CloudWatch Metrics for monitoring function performance
-- Error handling with detailed logging
+3. **Data Protection**:
+   - Input validation on all endpoints
+   - DynamoDB encryption at rest
 
-## Testing
+## Email Notifications
 
-Run tests:
-```
-npm test
-```
+The system uses Nodemailer with Gmail SMTP to send automated emails for:
+
+1. **User Registration**: 
+   - When an admin creates a new user, the system sends an email with a password setup link
+   - The link contains a secure token valid for 24 hours
+
+2. **Task Assignment**: 
+   - When a task is assigned to a user, they receive an email notification
+   - The email includes task details, deadline, and instructions to access the dashboard
+
+## Scheduled Functions
+
+The system includes scheduled Lambda functions that:
+
+1. **Check Deadlines**: Runs hourly to check for upcoming task deadlines
+2. **Reset Notification Flags**: Runs every 6 hours to reset notification flags
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Deployment Failures**:
+   - Check AWS credentials are properly configured
+   - Verify you have sufficient permissions in your AWS account
+   - Look at CloudFormation logs for detailed error information
+
+2. **API Errors**:
+   - Check Lambda logs in CloudWatch
+   - Verify environment variables are set correctly
+   - Test endpoints with Postman or curl to isolate issues
+
+3. **Email Notification Issues**:
+   - Verify GMAIL_USER and GMAIL_APP_PASS are correct
+   - Check if Gmail's "Less secure app access" settings need adjustment
+   - Look for email sending errors in Lambda logs
