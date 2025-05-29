@@ -96,9 +96,7 @@ For more detailed information, please refer to:
 - [Frontend Documentation](./frontend/README.md)
 - [Backend Documentation](./backend/README.md)
 
-## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
