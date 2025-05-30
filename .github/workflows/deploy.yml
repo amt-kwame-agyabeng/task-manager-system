@@ -34,7 +34,7 @@ jobs:
       - name: Build React app
         run: |
           cd frontend
-          CI=false npm run build
+          REACT_APP_VERSION=${{ github.sha }} CI=false npm run build
         env:
           REACT_APP_API_BASE: https://e0b4fhaw52.execute-api.us-east-1.amazonaws.com/dev
 
