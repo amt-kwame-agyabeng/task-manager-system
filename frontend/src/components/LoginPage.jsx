@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode as jwt_decode } from 'jwt-decode';
 import { toast } from 'react-hot-toast';
+import { FiUser, FiLock, FiLogIn } from 'react-icons/fi';
 
 const API_BASE = process.env.REACT_APP_API_BASE;
 
@@ -100,47 +101,63 @@ export default function LoginPage({ setUser }) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-gray-100">
-      <div className="w-full max-w-md px-8 py-10 bg-white rounded-xl shadow-lg transform transition-all">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-400 to-indigo-700">
+      <div className="w-full max-w-md px-8 py-10 bg-white rounded-xl shadow-2xl transform transition-all">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-700 mb-2">Task Management System</h1>
-         
+          <div className="inline-block p-4 rounded-full bg-blue-100 mb-4">
+            <FiLogIn className="text-blue-600 text-3xl" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
+          <p className="text-gray-500">Sign in to Task Management System</p>
         </div>
         
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">Email or User ID</label>
-            <input
-              id="identifier"
-              type="text"
-              placeholder="Enter your email or user ID"
-              value={identifier}
-              onChange={handleIdentifierChange}
-              onKeyDown={handleKeyDown}
-              className={`w-full px-4 py-3 rounded-lg border ${errorIdentifier ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-              disabled={loading}
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiUser className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="identifier"
+                type="text"
+                placeholder="Enter your email or user ID"
+                value={identifier}
+                onChange={handleIdentifierChange}
+                onKeyDown={handleKeyDown}
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border ${errorIdentifier ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                disabled={loading}
+              />
+            </div>
             {errorIdentifier && <p className="mt-1 text-sm text-red-600">{errorIdentifier}</p>}
           </div>
           
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={handlePasswordChange}
-              onKeyDown={handleKeyDown}
-              className={`w-full px-4 py-3 rounded-lg border ${errorPassword ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-              disabled={loading}
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiLock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={handlePasswordChange}
+                onKeyDown={handleKeyDown}
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border ${errorPassword ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                disabled={loading}
+              />
+            </div>
             {errorPassword && <p className="mt-1 text-sm text-red-600">{errorPassword}</p>}
           </div>
           
           <button
             disabled={loading}
-            className={`w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            className={`w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg ${
               loading ? 'opacity-70 cursor-not-allowed' : ''
             }`}
             onClick={handleLogin}
@@ -154,12 +171,21 @@ export default function LoginPage({ setUser }) {
                 Signing in...
               </span>
             ) : (
-              'Sign In'
+              <span className="flex items-center justify-center">
+                <FiLogIn className="mr-2" />
+                Sign In
+              </span>
             )}
           </button>
+          
+          <div className="relative my-4">
+           
+          </div>
+          
+          
         </div>
         
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Task Management System © {new Date().getFullYear()}
           </p>
