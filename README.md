@@ -4,6 +4,8 @@ A comprehensive task management application built with React frontend and AWS se
 
 **Live Demo:** [https://d3g452bocfjgmb.cloudfront.net/](https://d3g452bocfjgmb.cloudfront.net/)
 
+**Live Demo Credentials :** [email: johndoe63@gmail.com] [password: Jdoe!63]
+
 ## Overview
 
 This Task Management System provides a complete solution for task management with separate interfaces for administrators and regular users. Administrators can create, assign, and manage tasks, while users can view and update the status of tasks assigned to them.
