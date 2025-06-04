@@ -4,9 +4,10 @@ A comprehensive task management application built with React frontend and AWS se
 
 **Live Demo:** [https://d3g452bocfjgmb.cloudfront.net/](https://d3g452bocfjgmb.cloudfront.net/)
 
-## Admin Login Credentials 
-- **email:** johndoe63@gmail.com
-- **password:** Jdoe!63
+## Demo Access
+For demo credentials, please contact the project maintainer or use the following:
+- **Demo User:** johndoe63@gmail.com
+- **Password:** Jdoe!63
 
 ## Overview
 
