@@ -111,7 +111,7 @@ GMAIL_APP_PASS=your-gmail-app-password
    serverless deploy
    ```
 
-3. Initialize the admin user:
+3. Initialize the admin user(this is a one-time operation; the function is disabled after first run):
    ```
    curl -X POST https://your-api-endpoint.execute-api.region.amazonaws.com/dev/init-admin
    ```
