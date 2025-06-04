@@ -89,7 +89,7 @@ The backend is deployed using the Serverless Framework to AWS Lambda and API Gat
 
 After deployment, you'll need to:
 
-1. Initialize the admin user by making a request to the init-admin endpoint
+1. Initialize the admin user by making a request to the init-admin endpoint(this is a one-time operation; the function is disabled after first run)
 2. Log in with the default admin credentials (specified in your backend .env file)
 3. Start creating users and tasks
 
