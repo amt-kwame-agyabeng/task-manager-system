@@ -15,7 +15,7 @@ This Task Management System provides a complete solution for task management wit
 
 ## Features
 
-- **User Authentication**: Secure login system with JWT-based authentication
+- **User Authentication**: Secure login system with JWT-based authentication (login with email address or userId)
 - **Role-Based Access Control**: Different interfaces and permissions for admins and regular users
 - **Task Management**: Create, assign, update, and delete tasks
 - **User Management**: Add and manage team members
