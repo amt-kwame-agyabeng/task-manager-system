@@ -33,7 +33,7 @@ backend/
 ### Authentication
 
 - **POST /login**: Authenticate user and return JWT token
-- **POST /set-password**: Set or reset user password
+- **POST /set-password**: Set user password
 
 ### User Management
 
